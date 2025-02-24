@@ -9,3 +9,5 @@ serde = { version = "1.0.218", features = ["derive"] }
 log = "0.4.26"
 quick-xml = { version = "0.37.2", features = ["serialize"] }
 tokio = "1.43.0"
+dotenvy = "0.15.7"
+diesel = { version =  "2.2.7", features = ["mysql"] }
