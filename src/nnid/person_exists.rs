@@ -4,16 +4,19 @@ use crate::error::{Error, Errors};
 use crate::Pool;
 use crate::xml::Xml;
 
+
 #[get("/v1/api/people/<username>")]
 pub async fn person_exists(database: &State<Pool>, username: &str) -> Result<(), Errors<'static>>{
     let database = database.inner();
 
-    let exists: bool = sqlx::query_as!(
-        bool,
-        "SELECT EXISTS(SELECT 1 FROM users.users WHERE username = ? )",
+    let exists = sqlx::query!(
+        "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 ) as exists",
         username
     ).fetch_one(database)
         .await
+        .ok()
+        .map(|v| v.exists)
+        .flatten()
         .unwrap_or(true);
 
     if exists {

@@ -1,18 +1,21 @@
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use rocket::{post, State};
 use serde::{Deserialize, Serialize};
 use crate::account::account::{generate_password, User};
 use crate::error::Errors;
+use crate::nnid::pid_distribution::next_pid;
 use crate::Pool;
 use crate::xml::{Xml, YesNoVal};
 
+
+
 #[derive(Deserialize)]
-struct Email{
+pub struct Email{
     address: Box<str>
 }
 
 #[derive(Deserialize, Serialize)]
-struct Mii{
+pub struct Mii{
     name: Box<str>,
     primary: YesNoVal,
     data: Box<str>,
@@ -20,7 +23,7 @@ struct Mii{
 
 #[derive(Deserialize)]
 #[serde(rename(serialize = "person"))]
-struct AccountCreationData{
+pub struct AccountCreationData{
     birth_date: NaiveDate,
     user_id: Box<str>,
     password: Box<str>,
@@ -28,20 +31,27 @@ struct AccountCreationData{
     language: Box<str>,
     tz_name: Box<str>,
     email: Email,
+    mii: Mii,
     gender: Box<str>,
     marketing_flag: YesNoVal,
+    off_device_flag: YesNoVal,
     region: i32
 }
 
 #[derive(Serialize)]
 #[serde(rename(serialize = "person"))]
-struct AccountCreationResponseData{
+pub struct AccountCreationResponseData{
     pid: i32
 }
 
 #[post("/v1/api/people", data="<data>")]
-async fn create_account(database: &State<Pool>, data: Xml<AccountCreationData>) -> Result<Xml<AccountCreationResponseData>, Errors>{
+pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationData>) -> Result<Xml<AccountCreationResponseData>, Option<Errors>>{
     let database = database.inner();
+
+    // its fine to crash here if we cant get the next pid as that is in my opinion a dead state
+    // anyways as noone can register anymore, EVER
+
+    let pid = next_pid(database).await;
 
     let AccountCreationData {
         user_id,
@@ -52,21 +62,26 @@ async fn create_account(database: &State<Pool>, data: Xml<AccountCreationData>) 
         email: Email{
             address
         },
+        mii: Mii{
+            data,
+            ..
+        },
         marketing_flag,
         gender,
         region,
         country,
+        off_device_flag,
         ..
-    } = *data;
+    } = data.0;
 
 
+    let password = generate_password(pid, &password).ok_or(None)?;
 
-    let new_account = sqlx::query("
-        INSERT INTO users.users (
+    sqlx::query!("
+        INSERT INTO users (
                                  pid,
                                  username,
                                  password,
-                                 birthdate,
                                  birthdate,
                                  timezone,
                                  email,
@@ -75,26 +90,34 @@ async fn create_account(database: &State<Pool>, data: Xml<AccountCreationData>) 
                                  marketing_allowed,
                                  off_device_allowed,
                                  region,
+                                 gender,
                                  mii_data
                                  ) VALUES (
-                                           ?,?,?,?,?,?,?,?,?,?
+                                            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
                                  )
-    ");
+    ",
+        pid,
+        user_id.as_ref(),
+        password,
+        birth_date,
+        tz_name.as_ref(),
+        address.as_ref(),
+        country.as_ref(),
+        language.as_ref(),
+        marketing_flag.0,
+        off_device_flag.0,
+        region,
+        gender.as_ref(),
+        data.as_ref()
+    ).execute(database).await.unwrap();
 
 
-
-    let pid = connection.transaction::<_, diesel::result::Error, _>(|conn| Box::pin(async move{
-        use crate::schema::users::dsl::*;
-
-        diesel::insert_into(users)
-            .values(&new_account)
-            .returning(User::as_returning())
-            .get_result(conn)
-            .await?;
-
-
-        Ok(())
-    })).await;
+    
+    Ok(
+        Xml(AccountCreationResponseData{
+            pid
+        })
+    )
 }
 
 #[cfg(test)]

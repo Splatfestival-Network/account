@@ -15,6 +15,7 @@ mod nnid;
 mod account;
 mod error;
 mod dsresponse;
+mod data_wrapper;
 
 type Pool = sqlx::Pool<Postgres>;
 
@@ -42,7 +43,7 @@ async fn launch() -> _ {
                                                                     .to_string()
             ));
 
-            response.adjoin_header(Header::new("Content-Type", "text/xml; charset=utf-8"));
+            //response.adjoin_header(Header::new("Content-Type", "text/xml; charset=utf-8"));
 
 
             response.remove_header("x-content-type-options");
@@ -55,6 +56,8 @@ async fn launch() -> _ {
             nnid::agreements::get_agreement,
             nnid::timezones::get_timezone,
             nnid::person_exists::person_exists,
-            nnid::email::validate
+            nnid::email::validate,
+            nnid::create_account::create_account,
+            nnid::oauth::generate_token::generate_token
         ])
 }

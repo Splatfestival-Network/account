@@ -3,4 +3,6 @@ pub mod agreements;
 pub mod timezones;
 pub mod person_exists;
 pub mod email;
-mod create_account;
+pub mod create_account;
+pub mod oauth;
+mod pid_distribution;
