@@ -1,0 +1,12 @@
+[package]
+name = "mii"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+base64 = "0.22.1"
+bytemuck = { version =  "1.21.0", features = ["derive"] }
+reqwest = "0.12.12"
+
+[dev-dependencies]
+tokio = { version =  "1.43.0", features = ["macros"] }

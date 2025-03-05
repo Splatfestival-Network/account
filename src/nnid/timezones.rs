@@ -22,7 +22,7 @@ pub struct Timezones<'a>{
     pub timezone: &'a [Timezone],
 }
 
-pub static TIMEZONES: Lazy<HashMap<String, HashMap<String, Vec<Timezone>>>> = Lazy::new(||{
+pub static ZONE_TO_TIMEZONES: Lazy<HashMap<String, HashMap<String, Vec<Timezone>>>> = Lazy::new(||{
     let path = {
         // if this crashes then something is wrong with the server setup so crashing here is fine imo
         let mut path = env::current_dir().unwrap();
@@ -35,22 +35,36 @@ pub static TIMEZONES: Lazy<HashMap<String, HashMap<String, Vec<Timezone>>>> = La
     serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap()
 });
 
+pub static OFFSET_FROM_TIMEZONE: Lazy<HashMap<String, String>> = Lazy::new(||{
+    let mut map = HashMap::new();
+
+    for val in ZONE_TO_TIMEZONES.values(){
+        for val in val.values(){
+            for tz in val{
+                map.insert(tz.area.clone(), tz.utc_offset.clone());
+            }
+        }
+    }
+
+    map
+});
+
 
 #[get("/v1/api/content/time_zones/<zone>/<lang>")]
 pub fn get_timezone(zone: &str, lang: &str) -> Option<Xml<Timezones<'static>>>{
-    let timezone = (&*TIMEZONES).get(zone)?.get(lang)?;
+    let timezone = (&*ZONE_TO_TIMEZONES).get(zone)?.get(lang)?;
     let timezones = Timezones{ timezone };
     Some(Xml(timezones))
 }
 
 #[cfg(test)]
 mod test{
-    use crate::nnid::timezones::{Timezones, TIMEZONES};
+    use crate::nnid::timezones::{Timezones, ZONE_TO_TIMEZONES};
     use crate::xml::serialize_with_version;
 
     #[test]
     fn test(){
-        let timezone = (&*TIMEZONES).get("DE").unwrap().get("en").unwrap();
+        let timezone = (&*ZONE_TO_TIMEZONES).get("DE").unwrap().get("en").unwrap();
         let timezones = Timezones{ timezone };
         let ser = serialize_with_version(&timezones).unwrap();
 

@@ -1,7 +1,9 @@
 [package]
 name = "account"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+
+
 
 [dependencies]
 rocket = "0.5.1"
@@ -15,10 +17,17 @@ serde_json = "1.0.139"
 chrono = { version =  "0.4.39", features = ["serde"] }
 argon2 = "0.5.3"
 sha2 = "0.10.8"
-bytemuck = "1.21.0"
+bytemuck = { version =  "1.21.0", features = ["derive"] }
 base64 = "0.22.1"
 hex = "0.4.3"
 thiserror = "2.0.11"
 bcrypt = "0.17.0"
 sqlx = { version = "0.8.3", features = [ "runtime-tokio", "tls-native-tls", "postgres", "chrono" ] }
-
+aes = "0.8.4"
+hmac = "0.12.1"
+md-5 = "0.10.6"
+cbc = "0.1.2"
+mii = { path = "./mii" }
+minio = { git = "https://github.com/minio/minio-rs.git" }
+crc32fast = "1.4.2"
+gxhash = "3.4.1"

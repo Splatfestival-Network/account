@@ -1,11 +1,12 @@
 use std::io::Write;
+use std::ops::{Deref, DerefMut};
 use argon2::{Algorithm, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use bytemuck::bytes_of;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 use log::{error, warn};
 use rocket::http::Status;
 use rocket::{async_trait, Request};
@@ -13,6 +14,7 @@ use rocket::request::{FromRequest, Outcome};
 use sha2::{Digest, Sha256};
 use sha2::digest::FixedOutput;
 use crate::error::{Error, Errors};
+use crate::nnid::oauth::TokenData;
 use crate::Pool;
 
 macro_rules! request_try {
@@ -49,7 +51,9 @@ pub struct User {
     pub marketing_allowed: bool,
     pub off_device_allowed: bool,
     pub region: i32,
-    pub mii_data: String
+    pub mii_data: String,
+    pub creation_date: NaiveDateTime,
+    pub updated: NaiveDateTime
 }
 
 fn generate_nintendo_hash(pid: i32, text_password: &str) -> String{
@@ -120,15 +124,67 @@ pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<Use
 }
 
 async fn read_bearer_auth_token(connection: &Pool, token: &str) -> Option<User> {
-    let data = BASE64_STANDARD.decode(&token).ok()?;
+    let data = TokenData::decode(token)?;
 
-    warn!("bearer token login currently unsupported");
+    let token_info =
+        sqlx::query!(
+            "select * from tokens where pid = $1 and token_id = $2 and random =$3",
+            data.pid, data.token_id, data.random
+        ).
+            fetch_one(connection).await.ok()?;
 
-    None
+    if token_info.expires.and_utc() < Utc::now(){
+        return None
+    }
+
+    let mut user = sqlx::query_as!(
+        User,
+        "SELECT * FROM users WHERE pid = $1",
+        token_info.pid
+    ).fetch_one(connection).await.ok()?;
+
+    Some(user)
 }
 
+
+
+pub struct Auth<const FORCE_BEARER_AUTH: bool>(pub User);
+
+impl<const FORCE_BEARER_AUTH: bool> AsRef<User> for Auth<FORCE_BEARER_AUTH>{
+    fn as_ref(&self) -> &User {
+        &self.0
+    }
+}
+
+impl<const FORCE_BEARER_AUTH: bool> AsMut<User> for Auth<FORCE_BEARER_AUTH>{
+    fn as_mut(&mut self) -> &mut User {
+        &mut self.0
+    }
+}
+
+impl<const FORCE_BEARER_AUTH: bool> Deref for Auth<FORCE_BEARER_AUTH>{
+    type Target = User;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<const FORCE_BEARER_AUTH: bool> DerefMut for Auth<FORCE_BEARER_AUTH>{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<const FORCE_BEARER_AUTH: bool> Into<User> for Auth<FORCE_BEARER_AUTH>{
+    fn into(self) -> User {
+        self.0
+    }
+}
+
+
+
 #[async_trait]
-impl<'r> FromRequest<'r> for User{
+impl<'r, const FORCE_BEARER_AUTH: bool> FromRequest<'r> for Auth<FORCE_BEARER_AUTH>{
     type Error = Errors<'static>;
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
@@ -139,7 +195,7 @@ impl<'r> FromRequest<'r> for User{
         let (auth_type, token) = request_try!(auth.split_once(' ').ok_or(INVALID_TOKEN_ERRORS));
 
         let user = match auth_type{
-            "Basic" => read_basic_auth_token(pool, token).await,
+            "Basic" if !FORCE_BEARER_AUTH => read_basic_auth_token(pool, token).await,
             "Bearer" => read_bearer_auth_token(pool, token).await,
             _ => return Outcome::Error((Status::BadRequest, INVALID_TOKEN_ERRORS)),
         };
@@ -148,6 +204,6 @@ impl<'r> FromRequest<'r> for User{
             return Outcome::Error((Status::BadRequest, INVALID_TOKEN_ERRORS));
         };
 
-        Outcome::Success(user)
+        Outcome::Success(Self(user))
     }
 }

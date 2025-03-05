@@ -1,3 +1,5 @@
+
+
 use std::env;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -57,7 +59,8 @@ async fn launch() -> _ {
             nnid::timezones::get_timezone,
             nnid::person_exists::person_exists,
             nnid::email::validate,
-            nnid::create_account::create_account,
+            nnid::people::create_account,
+            nnid::people::get_own_profile,
             nnid::oauth::generate_token::generate_token
         ])
 }
