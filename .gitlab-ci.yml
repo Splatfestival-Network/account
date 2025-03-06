@@ -1,7 +1,7 @@
 image: docker:latest
 
 variables:
-  IMAGE_NAME: "ci.perditum.com/perditum/account"
+  IMAGE_NAME: "ci.perditum.com/perditum/account-rs"
   IMAGE_TAG: "${CI_COMMIT_REF_SLUG}"
 
 before_script:

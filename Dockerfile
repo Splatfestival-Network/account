@@ -16,7 +16,7 @@ WORKDIR /app
 COPY --from=builder /app/target/release/account /app/account
 
 # Set executable permissions
-RUN chmod +x /app/eshop-rs
+RUN chmod +x /app/account
 
 # Command to run the application
 CMD ["ls /app"]
