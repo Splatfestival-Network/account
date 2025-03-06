@@ -6,6 +6,8 @@ COPY . .
 
 RUN cargo build --release
 
+RUN rm .env
+
 FROM rust:1.85 AS final
 
 WORKDIR /app
