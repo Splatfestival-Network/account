@@ -1,4 +1,6 @@
-FROM rust:1.85 as builder
+FROM rust:alpine as builder
+
+RUN apk add --no-cache musl-dev openssl-dev musl openssl libcrypto3
 
 WORKDIR /app
 
@@ -8,7 +10,7 @@ RUN cargo build --release
 
 RUN rm .env
 
-FROM rust:1.85 AS final
+FROM rust:alpine AS final
 
 WORKDIR /app
 
