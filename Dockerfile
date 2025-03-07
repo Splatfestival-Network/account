@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN cargo build --release
+RUN cargo build --profile release-lto
 
 RUN rm .env
 
