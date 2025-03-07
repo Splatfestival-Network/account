@@ -117,8 +117,6 @@ pub async fn generate_token(pool: &State<Pool>, data: Form<TokenRequestData<'_>>
     
     let access_token = TokenReturnData::new(user.pid, pool).await;
 
-
-
     Ok(Xml(TokenRequestReturnData{
         access_token
     }))

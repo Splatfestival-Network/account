@@ -6,3 +6,4 @@ pub mod email;
 pub mod oauth;
 mod pid_distribution;
 pub mod people;
+pub mod provider;

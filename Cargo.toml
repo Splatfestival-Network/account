@@ -31,3 +31,10 @@ mii = { path = "./mii" }
 minio = { git = "https://github.com/minio/minio-rs.git" }
 crc32fast = "1.4.2"
 gxhash = "3.4.1"
+
+tonic = "0.12.3"
+prost = "0.13.4"
+
+
+[build-dependencies]
+tonic-build = "0.12.3"

@@ -18,6 +18,7 @@ mod account;
 mod error;
 mod dsresponse;
 mod data_wrapper;
+mod grpc;
 
 type Pool = sqlx::Pool<Postgres>;
 
@@ -61,6 +62,7 @@ async fn launch() -> _ {
             nnid::email::validate,
             nnid::people::create_account,
             nnid::people::get_own_profile,
-            nnid::oauth::generate_token::generate_token
+            nnid::oauth::generate_token::generate_token,
+            nnid::provider::get_nex_token,
         ])
 }
