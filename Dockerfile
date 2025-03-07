@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM rust:alpine as builder
 
 RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static protobuf-dev lld

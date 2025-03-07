@@ -53,7 +53,8 @@ pub struct User {
     pub region: i32,
     pub mii_data: String,
     pub creation_date: NaiveDateTime,
-    pub updated: NaiveDateTime
+    pub updated: NaiveDateTime,
+    pub nex_password: String
 }
 
 fn generate_nintendo_hash(pid: i32, text_password: &str) -> String{

@@ -3,9 +3,16 @@ use rocket::form::Form;
 use serde::{Deserialize, Serialize};
 use crate::account::account::User;
 use crate::error::{Error, Errors};
+use crate::nnid::oauth::generate_token::token_type::{AUTH_REFRESH_TOKEN, AUTH_TOKEN};
 use crate::nnid::oauth::TokenData;
 use crate::Pool;
 use crate::xml::Xml;
+
+pub mod token_type{
+    pub const AUTH_REFRESH_TOKEN: i32 = 1;
+    pub const AUTH_TOKEN: i32 = 0;
+    pub const NEX_TOKEN: i32 = 2;
+}
 
 const ACCOUNT_ID_OR_PASSWORD_ERRORS: Errors = Errors{
     error: &[
@@ -40,51 +47,33 @@ pub struct TokenReturnData {
     expires_in: i32
 }
 
-impl TokenReturnData {
-    async fn create_token(pid: i32, pool: &Pool, is_refresh_token: bool) -> (i64, i32){
-        let token_type = if is_refresh_token{
-            0x0
-        } else {
-            0x1
-        };
-        let data = sqlx::query!(
-            "insert into tokens (token_type, pid)
-            values ($1, $2) returning token_id, random",
-            token_type, pid
+pub async fn create_token(pool: &Pool, pid: i32, token_type: i32, title_id: Option<&str>) -> String{
+    let data = sqlx::query!(
+            "insert into tokens (token_type, pid, title_id)
+            values ($1, $2, $3) returning token_id, random",
+            token_type, pid, title_id
         )
-            .fetch_one(pool)
-            .await.unwrap();
+        .fetch_one(pool)
+        .await.unwrap();
 
-        (data.token_id, data.random)
-    }
-    async fn create_regular_token(pid: i32, pool: &Pool) -> (i64, i32){
-        Self::create_token(pid, pool, false).await
-    }
+    let token_id = data.token_id;
+    let random = data.random;
 
-    async fn create_refresh_token(pid: i32, pool: &Pool) -> (i64, i32){
-        Self::create_token(pid, pool, true).await
-    }
+    let token = TokenData {
+        token_id,
+        random,
+        pid
+    };
 
+    token.encode().to_string()
+}
+
+
+impl TokenReturnData {
     async fn new(pid: i32, pool: &Pool) -> Self{
-        let (token_id, random) = Self::create_regular_token(pid, pool).await;
+        let token = create_token(pool, pid, AUTH_TOKEN, None).await;
 
-        let token = TokenData {
-            token_id,
-            random,
-            pid
-        };
-
-        let token = token.encode().to_string();
-
-        let (token_id, random) = Self::create_refresh_token(pid, pool).await;
-
-        let refresh_token = TokenData {
-            token_id,
-            random,
-            pid
-        };
-
-        let refresh_token = refresh_token.encode().to_string();
+        let refresh_token = create_token(pool, pid, AUTH_REFRESH_TOKEN, None).await;
 
         Self{
             token,
