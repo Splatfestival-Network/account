@@ -8,13 +8,24 @@ before_script:
   - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" ci.perditum.com
 
 stages:
-  - build-and-push
+  - initialize-submodules
+  - build
+  - push
 
-build-and-push:
-  stage: build-and-push
+initialize-submodules:
+  stage: initialize-submodules
+  script:
+    - git submodule update --init
+
+build:
+  stage: build
   script:
     - echo "DATABASE_URL=$DATABASE_URL" > .env
     - docker build -t "$IMAGE_NAME:$IMAGE_TAG" .
+
+push:
+  stage: push
+  script:
     - docker tag "$IMAGE_NAME:$IMAGE_TAG" "$IMAGE_NAME:latest"
     - docker push "$IMAGE_NAME:$IMAGE_TAG"
     - docker push "$IMAGE_NAME:latest"
