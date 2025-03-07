@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN cargo build --release
+RUN cargo build --profile prod
 
 RUN rm .env
 
@@ -15,7 +15,7 @@ FROM rust:alpine AS final
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /app/target/release/account /app/account
+COPY --from=builder /app/target/prod/account /app/account
 
 # Set executable permissions
 RUN chmod +x /app/account

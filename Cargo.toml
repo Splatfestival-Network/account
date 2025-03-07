@@ -3,7 +3,14 @@ name = "account"
 version = "0.1.0"
 edition = "2024"
 
-
+[profile.prod]
+inherits = "release"
+overflow-checks = false
+strip = true
+debug = false
+debug-assertions = false
+lto = true
+incremental = false
 
 [dependencies]
 rocket = "0.5.1"
