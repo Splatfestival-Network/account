@@ -7,3 +7,4 @@ pub mod oauth;
 mod pid_distribution;
 pub mod people;
 pub mod provider;
+pub mod mapped_ids;

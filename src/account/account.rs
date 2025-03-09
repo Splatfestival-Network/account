@@ -124,7 +124,7 @@ pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<Use
     }
 }
 
-async fn read_bearer_auth_token(connection: &Pool, token: &str) -> Option<User> {
+pub async fn read_bearer_auth_token(connection: &Pool, token: &str) -> Option<User> {
     let data = TokenData::decode(token)?;
 
     let token_info =
