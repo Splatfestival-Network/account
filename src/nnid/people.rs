@@ -269,6 +269,11 @@ pub fn get_device_owner(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
     build_own_profile(user.into())
 }
 
+#[post("/v1/api/people/@me/devices")]
+pub fn get_own_device(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
+    build_own_profile(user.into())
+}
+
 fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
     let User {
         username,

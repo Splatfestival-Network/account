@@ -115,6 +115,7 @@ async fn launch() -> _ {
             nnid::people::create_account,
             nnid::people::get_own_profile,
             nnid::people::get_device_owner,
+            nnid::people::get_own_device,
             nnid::oauth::generate_token::generate_token,
             nnid::provider::get_nex_token,
             nnid::provider::get_service_token,
