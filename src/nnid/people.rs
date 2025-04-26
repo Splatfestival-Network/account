@@ -288,7 +288,7 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
         off_device_allowed,
         region,
         ..
-    };
+    } = user.into();
 
     let timezone_offset = (&*OFFSET_FROM_TIMEZONE).get(&timezone).unwrap().to_owned();
 
