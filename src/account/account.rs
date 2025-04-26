@@ -96,7 +96,7 @@ impl User{
     pub fn verify_cleartext_password(&self, cleartext_password: &str) -> Option<bool>{
         let nintendo_hash = self.generate_nintendo_hash(cleartext_password);
 
-        self.verify_hashed_password(cleartext_password)
+        self.verify_hashed_password(&nintendo_hash)
     }
 
     pub fn verify_hashed_password(&self, hashed_password: &str) -> Option<bool>{
