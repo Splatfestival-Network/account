@@ -261,15 +261,15 @@ struct GetOwnProfileData{
 
 #[get("/v1/api/people/@me/profile")]
 pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
-    build_own_profile(user)
+    build_own_profile(user.into())
 }
 
 #[get("/v1/api/people/@me/devices/owner")]
 pub fn get_device_owner(user: Auth<true>) -> Ds<Xml<GetOwnProfileData>>{
-    build_own_profile(user)
+    build_own_profile(user.into())
 }
 
-fn build_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>> {
+fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
     let User {
         username,
         pid,
@@ -288,7 +288,7 @@ fn build_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>> {
         off_device_allowed,
         region,
         ..
-    } = user.into();
+    };
 
     let timezone_offset = (&*OFFSET_FROM_TIMEZONE).get(&timezone).unwrap().to_owned();
 
