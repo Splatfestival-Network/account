@@ -45,6 +45,7 @@ const INVALID_TOKEN_ERRORS_DBG: Errors<'static> = Errors{
 };
 
 // optimization note: add token caching
+#[derive(Debug)]
 pub struct User {
     pub pid: i32,
     pub username: String,
@@ -154,7 +155,6 @@ pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<Use
             return None;
         }
     };
-    println!("Fetched user from database: {:?}", user);
 
     let password_valid = user.verify_cleartext_password(&login_password);
     println!("Password verification result: {:?}", password_valid);
