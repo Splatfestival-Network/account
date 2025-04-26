@@ -261,7 +261,16 @@ struct GetOwnProfileData{
 
 #[get("/v1/api/people/@me/profile")]
 pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
-    let User{
+    build_own_profile(user)
+}
+
+#[get("/v1/api/people/@me/devices/owner")]
+pub fn get_device_owner(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
+    build_own_profile(user)
+}
+
+fn build_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>> {
+    let User {
         username,
         pid,
         account_level,
@@ -283,10 +292,6 @@ pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
 
     let timezone_offset = (&*OFFSET_FROM_TIMEZONE).get(&timezone).unwrap().to_owned();
 
-    // whenever we need an id or hash we just take the gxhash of the data cause i dont want data clutter
-    // this both avoids the data we have to store as well as data clutter whilest keeping the ids
-    // always the same
-
     let mii_data = mii_data
         .replace("\n", "")
         .replace("\t", "")
@@ -294,7 +299,7 @@ pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
         .replace(" ", "");
 
     Ds(Xml(
-        GetOwnProfileData{
+        GetOwnProfileData {
             active_flag: YesNoVal(true),
             pid,
             user_id: username,
@@ -306,7 +311,7 @@ pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
             language,
             updated,
             marketing_flag: YesNoVal(marketing_allowed),
-            email: EmailInfoOwnProfileData{
+            email: EmailInfoOwnProfileData {
                 id: gxhash32(email.as_bytes(), 0),
                 address: email,
                 validated: YesNoVal(email_verified_since.is_some()),
@@ -317,19 +322,18 @@ pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
                 primary: YesNoVal(true),
                 parent: YesNoVal(false),
             },
-            mii: MiiDataOwnProfileData{
+            mii: MiiDataOwnProfileData {
                 id: gxhash32(mii_data.as_bytes(), 0),
-                // the bitmask here is to avoid causing an too big number as we dont know if the
-                // wii u uses a 64 bit int here
                 mii_hash: hex::encode(bytemuck::bytes_of(
                     &(gxhash64(mii_data.as_bytes(), 1) & !(0x1000000000000000))
                 )),
                 name: mii::MiiData::read(&mii_data)
-                        .map(|v| v.name).unwrap_or("INVALID".to_string()),
+                    .map(|v| v.name)
+                    .unwrap_or_else(|| "INVALID".to_string()),
                 primary: YesNoVal(true),
                 data: mii_data,
                 status: "COMPLETED".to_string(),
-                mii_images: MiiImages{
+                mii_images: MiiImages {
                     mii_image: {
                         let image_url = get_mii_img_url(pid, "tga");
                         let url_hash = gxhash32(image_url.as_bytes(), 0);
@@ -342,13 +346,13 @@ pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
                     }
                 }
             },
-
             off_device_flag: YesNoVal(off_device_allowed),
             region,
             utc_offset: timezone_offset,
         }
     ))
 }
+
 
 #[put("/v1/api/people/@me/miis/@primary")]
 pub fn change_mii() {
