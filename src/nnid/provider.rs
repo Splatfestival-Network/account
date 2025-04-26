@@ -1,20 +1,13 @@
 use std::net::Ipv4Addr;
-use std::str::FromStr;
 use rocket::{get, State};
 use serde::Serialize;
 use sqlx::types::ipnetwork::IpNetwork::V4;
 use crate::account::account::Auth;
 use crate::error::{Error, Errors};
-use crate::nnid::oauth::generate_token::{create_token, TokenRequestReturnData};
+use crate::nnid::oauth::generate_token::{create_token};
 use crate::nnid::oauth::generate_token::token_type::NEX_TOKEN;
-use crate::nnid::provider::Test::{A, B};
 use crate::Pool;
 use crate::xml::Xml;
-
-enum Test{
-    A(String),
-    B(i32)
-}
 
 const NO_IPV4_ERROR: Errors = Errors{
     error: &[

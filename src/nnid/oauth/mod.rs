@@ -1,13 +1,8 @@
 use std::env;
-use std::io::Write;
-use aes::{Aes128, Aes256, Block};
-use aes::cipher::consts::{U32, U64};
+use aes::{Aes128, Block};
 use aes::cipher::{BlockDecryptMut, BlockEncryptMut, Iv, Key};
 use aes::cipher::generic_array::sequence::GenericSequence;
-use bytemuck::{bytes_of, bytes_of_mut, from_bytes, from_bytes_mut, Pod, Zeroable};
-use chrono::NaiveTime;
-use hmac::{Hmac, Mac};
-use md5::Md5;
+use bytemuck::{bytes_of, from_bytes,  Pod, Zeroable};
 use once_cell::sync::Lazy;
 use aes::cipher::KeyIvInit;
 use base64::Engine;
@@ -23,26 +18,18 @@ pub struct TokenData{
     pub token_id: i64
 }
 
-
-static HMAC_SECRET: Lazy<Key<HmacMd5>> = Lazy::new(||{
-    Key::<HmacMd5>::clone_from_slice(&hex::decode(
-        env::var("ACCOUNT_HMAC_SECRET").expect("hmac secret has not been set")
-    ).expect("unable to decode ACCOUNT_HMAC_SECRET"))
-});
-
 static AES_KEY: Lazy<Key<Aes128>> = Lazy::new(||{
     Key::<Aes128>::clone_from_slice(&hex::decode(
         env::var("ACCOUNT_AES_KEY").expect("hmac secret has not been set")
     ).expect("unable to decode ACCOUNT_AES_KEY"))
 });
 
-type HmacMd5 = Hmac<Md5>;
 type Aes128CbcEnc = cbc::Encryptor<Aes128>;
 type Aes128CbcDec = cbc::Decryptor<Aes128>;
 
 impl TokenData{
     pub fn decode(token: &str) -> Option<Self>{
-        let mut data = BASE64_STANDARD.decode(token).ok()?;
+        let data = BASE64_STANDARD.decode(token).ok()?;
 
         let data: [u8; 16] = data.try_into().ok()?;
 
@@ -82,7 +69,7 @@ impl TokenData{
 #[cfg(test)]
 mod test{
     use std::env;
-    use crate::nnid::oauth::{TokenData, AES_KEY};
+    use crate::nnid::oauth::{TokenData};
 
     #[test]
     fn test_encode_decode(){

@@ -1,4 +1,4 @@
-use rocket::{get, State, post, FromForm, put};
+use rocket::{State, post, FromForm, put};
 use crate::Pool;
 use rocket::form::Form;
 use crate::email::send_verification_email;
@@ -15,7 +15,7 @@ const BAD_CODE_ERROR: Errors = Errors{
 };
 
 #[derive(FromForm)]
-struct ValidateEmailInput{
+pub struct ValidateEmailInput{
     email: String,
 }
 #[post("/v1/api/support/validate/email", data="<data>")]

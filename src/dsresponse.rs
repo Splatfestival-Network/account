@@ -1,9 +1,6 @@
-use std::marker::PhantomData;
 use rocket::{Request, Response};
-use rocket::http::{Header, Status};
+use rocket::http::Header;
 use rocket::response::Responder;
-use crate::error::Errors;
-use crate::xml::Xml;
 
 pub struct Ds<T>(pub T);
 

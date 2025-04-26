@@ -13,7 +13,6 @@ pub fn current_device_status() -> Xml<Device>{
 
 #[cfg(test)]
 mod tests {
-    use std::str::from_utf8;
     use crate::nnid::devices::Device;
 
     #[test]

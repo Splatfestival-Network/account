@@ -1,16 +1,12 @@
-
-
 use std::env;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
-use std::sync::Arc;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{SystemTime, UNIX_EPOCH};
 use dotenvy::dotenv;
 use juniper::{EmptyMutation, EmptySubscription};
-use log::info;
 use rocket::fairing::AdHoc;
-use rocket::futures::FutureExt;
-use rocket::http::Header;
-use rocket::routes;
+use rocket::http::{ContentType, Header, Status};
+use rocket::{catch, catchers, routes, Request};
+use rocket::response::content::RawXml;
 use sqlx::Postgres;
 use sqlx::postgres::PgPoolOptions;
 use tonic::transport::Server;
@@ -23,7 +19,7 @@ mod account;
 mod error;
 mod dsresponse;
 mod data_wrapper;
-#[deprecated]
+// #[deprecated]
 mod grpc;
 mod graphql;
 mod email;
@@ -60,6 +56,26 @@ async fn start_grpc(){
             .expect("unable to start grpc server");
     });
 
+}
+
+#[catch(404)]
+fn not_found(_req: &Request) -> (Status, (ContentType, RawXml<&'static str>)) {
+    (
+        Status::NotFound,
+        (
+            ContentType::XML,
+            RawXml(
+                r#"<?xml version="1.0"?>
+<errors>
+    <error>
+        <cause/>
+        <code>0008</code>
+        <message>Not found</message>
+    </error>
+</errors>"#,
+            ),
+        ),
+    )
 }
 
 #[rocket::launch]
@@ -116,6 +132,7 @@ async fn launch() -> _ {
             nnid::people::get_own_profile,
             nnid::people::get_device_owner,
             nnid::people::get_own_device,
+            nnid::people::change_mii,
             nnid::oauth::generate_token::generate_token,
             nnid::provider::get_nex_token,
             nnid::provider::get_service_token,
@@ -126,4 +143,5 @@ async fn launch() -> _ {
             graphql::get_graphql,
             graphql::post_graphql,
         ])
+        .register("/", catchers![not_found])
 }

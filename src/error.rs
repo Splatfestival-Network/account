@@ -1,11 +1,8 @@
-use log::error;
 use rocket::http::Status;
 use rocket::{Request, Response};
-use rocket::response::content::RawXml;
 use rocket::response::Responder;
 use rocket::serde::Serialize;
-use crate::nnid::timezones::Timezone;
-use crate::xml::{serialize_with_version, Xml};
+use crate::xml::Xml;
 
 #[derive(Serialize, Debug)]
 pub struct Error<'a>{

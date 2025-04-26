@@ -12,7 +12,7 @@ struct MappedId {
 
 #[derive(Serialize)]
 #[serde(rename = "mapped_ids")]
-struct MappedIds {
+pub struct MappedIds {
     mapped_id: Vec<MappedId>,
 }
 

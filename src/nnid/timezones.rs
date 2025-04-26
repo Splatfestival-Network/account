@@ -3,8 +3,7 @@ use std::{env, fs};
 use once_cell::sync::Lazy;
 use rocket::get;
 use serde::{Deserialize, Serialize};
-use serde_json::from_slice;
-use crate::xml::{serialize_with_version, Xml};
+use crate::xml::{Xml};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename(serialize = "timezone"))]

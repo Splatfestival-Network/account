@@ -1,11 +1,9 @@
-use std::{env, fs, io};
+use std::{env, io};
 use rocket::fs::NamedFile;
 use rocket::get;
 use rocket::response::content::RawXml;
 use tokio::fs::try_exists;
 use crate::dsresponse::Ds;
-use crate::nnid::devices::Device;
-use crate::xml::Xml;
 
 #[get("/v1/api/content/agreements/Nintendo-Network-EULA/<lang>/@latest")]
 pub async fn get_agreement(lang: &str) -> io::Result<Ds<RawXml<NamedFile>>>{

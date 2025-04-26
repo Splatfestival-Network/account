@@ -1,8 +1,6 @@
 use rocket::{get, State};
-use sqlx::Row;
 use crate::error::{Error, Errors};
 use crate::Pool;
-use crate::xml::Xml;
 
 
 #[get("/v1/api/people/<username>")]

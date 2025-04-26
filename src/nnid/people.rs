@@ -1,13 +1,10 @@
 use std::env;
-use std::io::Cursor;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime};
 use gxhash::{gxhash32, gxhash64};
-use minio::s3::args::PutObjectArgs;
-use minio::s3::builders::{ObjectContent, SegmentedBytes};
+use minio::s3::builders::{ObjectContent};
 use minio::s3::client::ClientBuilder;
 use minio::s3::creds::StaticProvider;
 use minio::s3::http::BaseUrl;
-use minio::s3::utils::crc32;
 use once_cell::sync::Lazy;
 use rocket::{get, post, put, State};
 use rocket::serde::{Deserialize, Serialize};
@@ -15,7 +12,7 @@ use crate::account::account::{generate_password, Auth, User};
 use crate::dsresponse::Ds;
 use crate::error::Errors;
 use crate::nnid::pid_distribution::next_pid;
-use crate::nnid::timezones::{OFFSET_FROM_TIMEZONE, ZONE_TO_TIMEZONES};
+use crate::nnid::timezones::{OFFSET_FROM_TIMEZONE};
 use crate::Pool;
 use crate::xml::{Xml, YesNoVal};
 use crate::email::send_verification_email;
@@ -191,10 +188,10 @@ pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationDat
     )
 }
 
-#[derive(Serialize)]
-struct DevAttr{
-
-}
+// #[derive(Serialize)]
+// struct DevAttr{
+//
+// }
 
 #[derive(Serialize)]
 struct EmailInfoOwnProfileData{
@@ -240,7 +237,7 @@ struct MiiDataOwnProfileData{
 
 #[derive(Serialize)]
 #[serde(rename(serialize = "person"))]
-struct GetOwnProfileData{
+pub struct GetOwnProfileData{
     active_flag: YesNoVal,
     birth_date: NaiveDate,
     country: String,
@@ -278,7 +275,7 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
     let User {
         username,
         pid,
-        account_level,
+        // account_level,
         mii_data,
         gender,
         birthdate,
@@ -292,6 +289,7 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
         marketing_allowed,
         off_device_allowed,
         region,
+        // verification_code,
         ..
     } = user.into();
 

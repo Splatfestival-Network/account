@@ -1,18 +1,17 @@
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
-use argon2::{Algorithm, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
-use argon2::password_hash::rand_core::OsRng;
-use argon2::password_hash::SaltString;
+// Don't import until required.
+// use argon2::{Algorithm, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+// use argon2::password_hash::rand_core::OsRng;
+// use argon2::password_hash::SaltString;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use bytemuck::bytes_of;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
-use log::{error, warn};
+use chrono::{NaiveDate, NaiveDateTime, Utc};
 use rocket::http::Status;
 use rocket::{async_trait, Request};
 use rocket::request::{FromRequest, Outcome};
 use sha2::{Digest, Sha256};
-use sha2::digest::FixedOutput;
 use crate::error::{Error, Errors};
 use crate::nnid::oauth::TokenData;
 use crate::Pool;
@@ -31,15 +30,6 @@ const INVALID_TOKEN_ERRORS: Errors<'static> = Errors{
         Error{
             message: "Invalid access token",
             code: "0005"
-        }
-    ]
-};
-
-const INVALID_TOKEN_ERRORS_DBG: Errors<'static> = Errors{
-    error: &[
-        Error{
-            message: "Test err 1",
-            code: "0305"
         }
     ]
 };
@@ -112,8 +102,6 @@ pub fn generate_password(pid: i32, cleartext_password: &str) -> Option<String>{
 
 
 pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<User> {
-    println!("Received token (base64): {:?}", token);
-
     let data = match BASE64_STANDARD.decode(&token) {
         Ok(d) => d,
         Err(e) => {
@@ -121,7 +109,6 @@ pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<Use
             return None;
         }
     };
-    println!("Decoded base64 bytes: {:?}", data);
 
     let decoded_basic_token = match String::from_utf8(data) {
         Ok(s) => s,
@@ -130,7 +117,6 @@ pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<Use
             return None;
         }
     };
-    println!("Decoded basic auth token string: {:?}", decoded_basic_token);
 
     let (login_username, login_password) = match decoded_basic_token.split_once(' ') {
         Some(parts) => parts,
@@ -139,8 +125,6 @@ pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<Use
             return None;
         }
     };
-    println!("Parsed login_username: {:?}", login_username);
-    println!("Parsed login_password: {:?}", login_password);
 
     let user_result = sqlx::query_as!(
         User,
@@ -148,7 +132,7 @@ pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<Use
         login_username
     ).fetch_one(connection).await;
 
-    let mut user = match user_result {
+    let user = match user_result {
         Ok(u) => u,
         Err(e) => {
             println!("Failed to fetch user from database: {:?}", e);
@@ -157,13 +141,10 @@ pub async fn read_basic_auth_token(connection: &Pool, token: &str) -> Option<Use
     };
 
     let password_valid = user.verify_cleartext_password(&login_password);
-    println!("Password verification result: {:?}", password_valid);
 
     if password_valid == Some(true) {
-        println!("Password verification succeeded");
         Some(user)
     } else {
-        println!("Password verification failed");
         None
     }
 }
@@ -183,7 +164,7 @@ pub async fn read_bearer_auth_token(connection: &Pool, token: &str) -> Option<Us
         return None
     }
 
-    let mut user = sqlx::query_as!(
+    let user = sqlx::query_as!(
         User,
         "SELECT * FROM users WHERE pid = $1",
         token_info.pid
@@ -247,7 +228,7 @@ impl<'r, const FORCE_BEARER_AUTH: bool> FromRequest<'r> for Auth<FORCE_BEARER_AU
         };
 
         let Some(user) = user else {
-            return Outcome::Error((Status::BadRequest, INVALID_TOKEN_ERRORS_DBG));
+            return Outcome::Error((Status::BadRequest, INVALID_TOKEN_ERRORS));
         };
 
         Outcome::Success(Self(user))

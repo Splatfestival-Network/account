@@ -1,6 +1,5 @@
-use std::ops::Index;
 use std::str::FromStr;
-use bytemuck::{from_bytes, try_from_bytes, Pod, Zeroable};
+use bytemuck::{try_from_bytes, Pod, Zeroable};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use reqwest::Url;
@@ -73,7 +72,10 @@ pub async fn get_image_tga(data: &str) -> Option<Vec<u8>>{
 
 #[cfg(test)]
 mod test{
-    #[tokio::test]
+    use std::fs;
+use crate::get_image_png;
+
+#[tokio::test]
     async fn test_image_get(){
         let image = get_image_png("AAEAQDrPvmeBxJIQ3cL/BYp4iCWDvgAA8FVEAEoATQByAFQAVgAAAGgAZQByAAB/BAApBBpK4xiXEqQMAhgXbAoACClQQkhQTQBFAAAALQBTAHcAaQB0AGMAaAAAAMqP").await.unwrap();
 

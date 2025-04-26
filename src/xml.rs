@@ -1,5 +1,4 @@
 use std::fmt::Formatter;
-use std::io::Cursor;
 use std::ops::{Deref, DerefMut};
 use std::result;
 use rocket::http::Status;
@@ -8,15 +7,11 @@ use rocket::response::Responder;
 use serde::{Deserialize, Deserializer, Serialize};
 use rocket::response::Result;
 use log::error;
-use quick_xml::events::{BytesDecl, Event};
 use quick_xml::se::Serializer;
 use quick_xml::{DeError, SeError};
 use rocket::data::{ByteUnit, FromData, Outcome};
 use rocket::response::content::RawXml;
-use rocket::response::status::BadRequest;
-use serde::__private::de::UntaggedUnitVisitor;
 use serde::de::{DeserializeOwned, Error, Visitor};
-use thiserror::Error;
 
 pub fn serialize_with_version(serializable: &impl Serialize) -> result::Result<Box<str>, SeError>{
     let mut write_dest = "<?xml version=\"1.0\"?>".to_owned();
@@ -61,7 +56,7 @@ impl<'r, 'o: 'r, T: Serialize> Responder<'r, 'o> for Xml<T>{
 impl<'r, T: DeserializeOwned> FromData<'r> for Xml<T>{
     type Error = Option<DeError>;
 
-    async fn from_data(req: &'r Request<'_>, data: Data<'r>) -> Outcome<'r, Self> {
+    async fn from_data(_req: &'r Request<'_>, data: Data<'r>) -> Outcome<'r, Self> {
         let data = data.open(1 * ByteUnit::MB);
 
         let Ok(data) = data.into_string().await else {
@@ -83,9 +78,9 @@ pub struct YesNoVal(pub bool);
 
 struct YesNoVisitor;
 
-#[derive(Debug, Error)]
-#[error("did not find Y or N")]
-struct NotYNError;
+// #[derive(Debug, Error)]
+// #[error("did not find Y or N")]
+// struct NotYNError;
 
 
 

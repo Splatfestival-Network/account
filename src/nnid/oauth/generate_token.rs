@@ -1,6 +1,6 @@
 use rocket::{post, FromForm, State};
 use rocket::form::Form;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use crate::account::account::User;
 use crate::error::{Error, Errors};
 use crate::nnid::oauth::generate_token::token_type::{AUTH_REFRESH_TOKEN, AUTH_TOKEN};
