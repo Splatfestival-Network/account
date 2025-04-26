@@ -18,6 +18,8 @@ use crate::nnid::pid_distribution::next_pid;
 use crate::nnid::timezones::{OFFSET_FROM_TIMEZONE, ZONE_TO_TIMEZONES};
 use crate::Pool;
 use crate::xml::{Xml, YesNoVal};
+use crate::email::send_verification_email;
+use rand::Rng;
 
 static S3_URL_STRING: Lazy<Box<str>> = Lazy::new(||
     env::var("S3_URL").expect("S3_URL not specified").into_boxed_str()
@@ -114,6 +116,8 @@ pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationDat
 
     let pid = next_pid(database).await;
 
+    let verification_code: i32 = rand::thread_rng().gen_range(100_000..1_000_000);
+
     let AccountCreationData {
         user_id,
         password,
@@ -152,9 +156,10 @@ pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationDat
                                  off_device_allowed,
                                  region,
                                  gender,
-                                 mii_data
+                                 mii_data,
+                                 verification_code
                                  ) VALUES (
-                                            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+                                            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
                                  )
     ",
         pid,
@@ -169,10 +174,15 @@ pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationDat
         off_device_flag.0,
         region,
         gender.as_ref(),
-        data.as_ref()
+        data.as_ref(),
+        verification_code,
     ).execute(database).await.unwrap();
 
     generate_s3_images(pid, &data).await;
+
+    if let Err(e) = send_verification_email(address.as_ref(), verification_code, user_id.as_ref()).await {
+        println!("Failed to send verification email: {e}");
+    }
 
     Ok(
         Xml(AccountCreationResponseData{
