@@ -54,7 +54,8 @@ pub struct User {
     pub mii_data: String,
     pub creation_date: NaiveDateTime,
     pub updated: NaiveDateTime,
-    pub nex_password: String
+    pub nex_password: String,
+    pub verification_code: Option<i32>
 }
 
 fn generate_nintendo_hash(pid: i32, text_password: &str) -> String{

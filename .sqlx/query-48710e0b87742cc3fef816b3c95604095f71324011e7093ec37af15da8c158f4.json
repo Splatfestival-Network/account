@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select * from tokens where pid = $1 and token_id = $2 and random = $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "token_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "assigned_ip",
+        "type_info": "Inet"
+      },
+      {
+        "ordinal": 3,
+        "name": "random",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "token_type",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "creation_time",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 6,
+        "name": "expires",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 7,
+        "name": "title_id",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "48710e0b87742cc3fef816b3c95604095f71324011e7093ec37af15da8c158f4"
+}

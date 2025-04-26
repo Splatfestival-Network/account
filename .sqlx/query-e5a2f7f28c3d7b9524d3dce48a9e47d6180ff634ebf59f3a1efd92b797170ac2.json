@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "insert into tokens (token_type, pid, title_id)\n            values ($1, $2, $3) returning token_id, random",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "token_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "random",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "e5a2f7f28c3d7b9524d3dce48a9e47d6180ff634ebf59f3a1efd92b797170ac2"
+}

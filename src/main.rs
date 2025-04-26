@@ -26,6 +26,7 @@ mod data_wrapper;
 #[deprecated]
 mod grpc;
 mod graphql;
+mod email;
 
 type Pool = sqlx::Pool<Postgres>;
 
@@ -109,7 +110,8 @@ async fn launch() -> _ {
             nnid::agreements::get_agreement,
             nnid::timezones::get_timezone,
             nnid::person_exists::person_exists,
-            nnid::email::validate,
+            nnid::support::validate,
+            nnid::support::verify_email,
             nnid::people::create_account,
             nnid::people::get_own_profile,
             nnid::oauth::generate_token::generate_token,

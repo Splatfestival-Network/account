@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select address, port from nex_servers where game_server_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "address",
+        "type_info": "Inet"
+      },
+      {
+        "ordinal": 1,
+        "name": "port",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "5bd26d4c9e701bde77ce598fea2ce0b98ea2c7de03e71ac704c3ba047162c0b2"
+}
