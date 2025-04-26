@@ -35,6 +35,15 @@ const INVALID_TOKEN_ERRORS: Errors<'static> = Errors{
     ]
 };
 
+const INVALID_TOKEN_ERRORS_DBG: Errors<'static> = Errors{
+    error: &[
+        Error{
+            message: "Test err 1",
+            code: "0305"
+        }
+    ]
+};
+
 // optimization note: add token caching
 pub struct User {
     pub pid: i32,
@@ -199,7 +208,7 @@ impl<'r, const FORCE_BEARER_AUTH: bool> FromRequest<'r> for Auth<FORCE_BEARER_AU
         let user = match auth_type{
             "Basic" if !FORCE_BEARER_AUTH => read_basic_auth_token(pool, token).await,
             "Bearer" => read_bearer_auth_token(pool, token).await,
-            _ => return Outcome::Error((Status::BadRequest, INVALID_TOKEN_ERRORS)),
+            _ => return Outcome::Error((Status::BadRequest, INVALID_TOKEN_ERRORS_DBG)),
         };
 
         let Some(user) = user else {

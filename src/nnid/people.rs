@@ -265,7 +265,7 @@ pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
 }
 
 #[get("/v1/api/people/@me/devices/owner")]
-pub fn get_device_owner(user: Auth<true>) -> Ds<Xml<GetOwnProfileData>>{
+pub fn get_device_owner(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
     build_own_profile(user.into())
 }
 
@@ -356,6 +356,6 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
 
 #[put("/v1/api/people/@me/miis/@primary")]
 pub fn change_mii() {
-    // stubbed(tecnically requires auth but this doesnt do anything so theres no harm in not doing auth here rn)
+    // stubbed(technically requires auth but this doesnt do anything so theres no harm in not doing auth here rn)
 }
 
