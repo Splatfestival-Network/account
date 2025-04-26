@@ -1,5 +1,4 @@
-use rocket::{get, State, post, FromForm};
-use rocket::http::Status;
+use rocket::{get, State, post, FromForm, put};
 use crate::Pool;
 use rocket::form::Form;
 use crate::email::send_verification_email;
@@ -26,7 +25,7 @@ pub async fn validate(data: Form<ValidateEmailInput>){
     }
 }
 
-#[get("/v1/api/support/email_confirmation/<pid>/<code>")]
+#[put("/v1/api/support/email_confirmation/<pid>/<code>")]
 pub async fn verify_email(database: &State<Pool>, pid: i32, code: i32) -> Result<(), Errors<'static>> {
     let db = database.inner();
 
