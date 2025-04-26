@@ -265,7 +265,7 @@ pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
 }
 
 #[get("/v1/api/people/@me/devices/owner")]
-pub fn get_device_owner(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
+pub fn get_device_owner(user: Auth<true>) -> Ds<Xml<GetOwnProfileData>>{
     build_own_profile(user)
 }
 
