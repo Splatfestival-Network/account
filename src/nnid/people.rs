@@ -432,7 +432,6 @@ pub async fn change_mii(
 
 pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mii_data: &str) {
     let user_mii_key = format!("mii/{}", pid);
-    println!("Starting Mii image generation for PID {}", pid);
 
     async fn save_and_upload(
         client: &Client,
@@ -441,50 +440,33 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         data: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let temp_path = format!("/tmp/{}", key.replace("/", "_"));
-        println!("Saving temporary file at {}", temp_path);
 
         {
             let mut file = std::fs::File::create(&temp_path)?;
             file.write_all(data)?;
-            file.flush()?; // Make sure file is actually written
+            file.flush()?;
         }
 
-        println!("File saved, starting upload to S3...");
         let content = ObjectContent::from(std::path::Path::new(&temp_path));
         client.put_object_content(bucket, key, content).send().await?;
 
-        println!("Uploaded {} to bucket {}", key, bucket);
-
-        // ✅ Now delete the temp file
-        match std::fs::remove_file(&temp_path) {
-            Ok(_) => println!("Deleted temporary file {}", temp_path),
-            Err(e) => println!("Failed to delete temporary file {}: {:?}", temp_path, e),
-        }
+        std::fs::remove_file(&temp_path)?;
 
         Ok(())
     }
 
-    // Upload normal face image
     if let Some(png_data) = get_image_png(mii_data).await {
-        println!("Fetched PNG for PID {}, preparing upload...", pid);
         if let Err(e) = save_and_upload(&client, bucket, &format!("{}/normal_face.png", user_mii_key), &png_data).await {
             println!("Failed to upload normal_face.png for PID {}: {:?}", pid, e);
         }
-    } else {
-        println!("Failed to fetch PNG for PID {}", pid);
     }
 
-    // Upload standard TGA
     if let Some(tga_data) = get_image_tga(mii_data).await {
-        println!("Fetched TGA for PID {}, preparing upload...", pid);
         if let Err(e) = save_and_upload(&client, bucket, &format!("{}/standard.tga", user_mii_key), &tga_data).await {
             println!("Failed to upload standard.tga for PID {}: {:?}", pid, e);
         }
-    } else {
-        println!("Failed to fetch TGA for PID {}", pid);
     }
 
-    // Upload face expressions
     let expressions = [
         "frustrated",
         "smile_open_mouth",
@@ -498,40 +480,27 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
             "https://mii-unsecure.ariankordi.net/miis/image.png?data={}&expression={}&type=face&width=128&instance_count=1",
             mii_data, expression
         );
-        println!("Fetching expression '{}' for PID {}", expression, pid);
 
         if let Ok(resp) = reqwest::get(&url).await {
             if let Ok(bytes) = resp.bytes().await {
-                println!("Fetched expression '{}', preparing upload...", expression);
                 if let Err(e) = save_and_upload(&client, bucket, &format!("{}/{}.png", user_mii_key, expression), &bytes).await {
                     println!("Failed to upload {}.png for PID {}: {:?}", expression, pid, e);
                 }
-            } else {
-                println!("Failed to read bytes for expression '{}' for PID {}", expression, pid);
             }
-        } else {
-            println!("Failed to fetch expression '{}' for PID {}", expression, pid);
         }
     }
 
-    // Upload body image
     let body_url = format!(
         "https://mii-unsecure.ariankordi.net/miis/image.png?data={}&type=all_body&width=270&instance_count=1",
         mii_data
     );
-    println!("Fetching body image for PID {}", pid);
 
     if let Ok(resp) = reqwest::get(&body_url).await {
         if let Ok(bytes) = resp.bytes().await {
-            println!("Fetched body image, preparing upload...");
             if let Err(e) = save_and_upload(&client, bucket, &format!("{}/body.png", user_mii_key), &bytes).await {
                 println!("Failed to upload body.png for PID {}: {:?}", pid, e);
             }
-        } else {
-            println!("Failed to read body image bytes for PID {}", pid);
         }
-    } else {
-        println!("Failed to fetch body image for PID {}", pid);
     }
 
     println!("Finished Mii image generation for PID {}", pid);
