@@ -55,30 +55,44 @@ fn get_mii_img_url(pid: i32, format: &str) -> String{
     format!("{}/pn-boss/{}", &*S3_URL_STRING, get_mii_img_url_path(pid, format))
 }
 
-async fn generate_s3_images(pid: i32, mii_data: &str){
-
-
+pub async fn generate_s3_images(pid: i32, mii_data: &str) {
     let auth = StaticProvider::new(&S3_USER, &S3_PASSWD, None);
 
     let Ok(client) = ClientBuilder::new(S3_URL.clone())
         .provider(Some(Box::new(auth)))
-        .build() else {
+        .build()
+    else {
+        println!("Failed to build S3 client for PID {}", pid);
         return;
     };
 
     let Some(image) = mii::get_image_png(mii_data).await else {
+        println!("Failed to fetch PNG image for PID {}", pid);
         return;
     };
+
     let object_name = get_mii_img_url_path(pid, "png");
     let object_content = ObjectContent::from(image);
-    client.put_object_content("pn-cdn", &object_name, object_content).send().await.ok();
+
+    if let Err(e) = client.put_object_content("pn-cdn", &object_name, object_content).send().await {
+        println!("Failed to upload PNG for PID {}: {:?}", pid, e);
+    } else {
+        println!("Successfully uploaded PNG for PID {}", pid);
+    }
 
     let Some(image) = mii::get_image_tga(mii_data).await else {
+        println!("Failed to fetch TGA image for PID {}", pid);
         return;
     };
-    let object_name =  get_mii_img_url_path(pid, "tga");
+
+    let object_name = get_mii_img_url_path(pid, "tga");
     let object_content = ObjectContent::from(image);
-    client.put_object_content("pn-cdn", &object_name, object_content).send().await.ok();
+
+    if let Err(e) = client.put_object_content("pn-cdn", &object_name, object_content).send().await {
+        println!("Failed to upload TGA for PID {}: {:?}", pid, e);
+    } else {
+        println!("Successfully uploaded TGA for PID {}", pid);
+    }
 }
 
 #[derive(Deserialize)]
