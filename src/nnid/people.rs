@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 use chrono::{NaiveDate, NaiveDateTime};
 use gxhash::{gxhash32, gxhash64};
@@ -436,7 +437,13 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         data: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let temp_path = format!("/tmp/{}", key.replace("/", "_"));
-        fs::write(&temp_path, data)?;
+
+        {
+            use std::fs::File;
+            let mut file = File::create(&temp_path)?;
+            file.write_all(data)?;
+            file.flush()?;
+        }
 
         let content = ObjectContent::from(Path::new(&temp_path));
         client.put_object_content(bucket, key, content).send().await?;
@@ -446,7 +453,7 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         Ok(())
     }
 
-    // Upload normal face images
+    // Upload normal face image
     if let Some(png_data) = get_image_png(mii_data).await {
         println!("Fetched PNG for PID {}, uploading...", pid);
         if let Err(e) = save_upload_delete(&client, bucket, &format!("{}/normal_face.png", user_mii_key), &png_data).await {
@@ -458,6 +465,7 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         println!("Failed to fetch PNG for PID {}", pid);
     }
 
+    // Upload standard TGA
     if let Some(tga_data) = get_image_tga(mii_data).await {
         println!("Fetched TGA for PID {}, uploading...", pid);
         if let Err(e) = save_upload_delete(&client, bucket, &format!("{}/standard.tga", user_mii_key), &tga_data).await {
@@ -469,12 +477,13 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         println!("Failed to fetch TGA for PID {}", pid);
     }
 
+    // Upload face expressions
     let expressions = [
         "frustrated",
         "smile_open_mouth",
         "wink_left",
         "sorrow",
-        "surprise_open_mouth"
+        "surprise_open_mouth",
     ];
 
     for expression in expressions.iter() {
@@ -500,6 +509,7 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         }
     }
 
+    // Upload body image
     let body_url = format!(
         "https://mii-unsecure.ariankordi.net/miis/image.png?data={}&type=all_body&width=270&instance_count=1",
         mii_data
@@ -523,6 +533,7 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
 
     println!("Finished Mii image generation for PID {}", pid);
 }
+
 
 
 
