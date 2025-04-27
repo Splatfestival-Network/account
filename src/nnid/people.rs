@@ -10,18 +10,30 @@ use rocket::{get, post, put, State};
 use rocket::serde::{Deserialize, Serialize};
 use crate::account::account::{generate_password, Auth, User};
 use crate::dsresponse::Ds;
-use crate::error::Errors;
+use crate::error::{Error, Errors};
 use crate::nnid::pid_distribution::next_pid;
 use crate::nnid::timezones::{OFFSET_FROM_TIMEZONE};
 use crate::Pool;
 use crate::xml::{Xml, YesNoVal};
 use crate::email::send_verification_email;
 use rand::Rng;
+use mii::{get_image_png, get_image_tga};
+use minio::s3::client::Client;
+use minio::s3::args::PutObjectArgs;
+use std::sync::Arc;
 
 static S3_URL_STRING: Lazy<Box<str>> = Lazy::new(||
     env::var("S3_URL").expect("S3_URL not specified").into_boxed_str()
 );
 
+const DATABASE_ERROR: Errors = Errors{
+    error: &[
+        Error{
+            code: "9999",
+            message: "Internal server error"
+        }
+    ]
+};
 
 static S3_URL: Lazy<BaseUrl> = Lazy::new(||
     S3_URL_STRING.parse().unwrap()
@@ -72,6 +84,17 @@ async fn generate_s3_images(pid: i32, mii_data: &str){
 #[derive(Deserialize)]
 pub struct Email{
     address: Box<str>
+}
+
+pub struct S3ClientState {
+    pub client: Arc<Client>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateMiiData {
+    name: Box<str>,
+    primary: crate::xml::YesNoVal,
+    data: Box<str>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -357,8 +380,92 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
 }
 
 
-#[put("/v1/api/people/@me/miis/@primary")]
-pub fn change_mii() {
-    // stubbed(technically requires auth but this doesnt do anything so theres no harm in not doing auth here rn)
+#[put("/v1/api/people/@me/miis/@primary", data = "<data>")]
+pub async fn refresh_mii_images(
+    database: &State<Pool>,
+    s3: &State<S3ClientState>,
+    auth: Auth<false>,
+    data: Xml<UpdateMiiData>,
+) -> Result<(), Option<Errors<'static>>> {
+    let db = database.inner();
+    let pid = auth.pid;
+
+    let mii_data = data.data.as_ref();
+
+    let result = sqlx::query!(
+        "UPDATE users SET mii_data = $1 WHERE pid = $2",
+        mii_data,
+        pid
+    )
+        .execute(db)
+        .await;
+
+    if result.is_err() {
+        return Err(Some(DATABASE_ERROR));
+    }
+
+    generate_mii_images(s3.client.clone(), "pn-cdn", pid, mii_data).await;
+
+    Ok(())
 }
 
+pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mii_data: &str) {
+    let user_mii_key = format!("mii/{}", pid);
+
+    // Upload normal face images
+    if let Some(png_data) = get_image_png(mii_data).await {
+        let object_content = ObjectContent::from(png_data.clone());
+        let _ = client.put_object_content(
+            bucket,
+            &format!("{}/normal_face.png", user_mii_key),
+            object_content
+        ).send().await.ok();
+    }
+
+    if let Some(tga_data) = get_image_tga(mii_data).await {
+        let object_content = ObjectContent::from(tga_data.clone());
+        let _ = client.put_object_content(
+            bucket,
+            &format!("{}/standard.tga", user_mii_key),
+            object_content
+        ).send().await.ok();
+    }
+
+    // Upload expressions
+    let expressions = [
+        "frustrated",
+        "smile_open_mouth",
+        "wink_left",
+        "sorrow",
+        "surprise_open_mouth"
+    ];
+
+    for expression in expressions.iter() {
+        let url = format!("https://mii-unsecure.ariankordi.net/miis/image.png?data={}&expression={}&type=face&width=128&instance_count=1", mii_data, expression);
+
+        if let Ok(resp) = reqwest::get(&url).await {
+            if let Ok(bytes) = resp.bytes().await {
+                let object_content = ObjectContent::from(bytes.to_vec());
+                let _ = client.put_object_content(
+                    bucket,
+                    &format!("{}/{}.png", user_mii_key, expression),
+                    object_content
+                ).send().await.ok();
+            }
+        }
+    }
+
+    // Upload body
+    let body_url = format!("https://mii-unsecure.ariankordi.net/miis/image.png?data={}&type=all_body&width=270&instance_count=1", mii_data);
+
+    if let Ok(resp) = reqwest::get(&body_url).await {
+        if let Ok(bytes) = resp.bytes().await {
+            let object_content = ObjectContent::from(bytes.to_vec());
+            let _ = client.put_object_content(
+                bucket,
+                &format!("{}/body.png", user_mii_key),
+                object_content
+            ).send().await.ok();
+        }
+    }
+}
