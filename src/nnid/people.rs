@@ -432,14 +432,13 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
     if let Some(png_data) = get_image_png(mii_data).await {
         println!("Fetched PNG for PID {}, uploading...", pid);
         let object_content = ObjectContent::from(png_data.clone());
-        if client.put_object_content(
+        match client.put_object_content(
             bucket,
             &format!("{}/normal_face.png", user_mii_key),
             object_content
-        ).send().await.is_ok() {
-            println!("Uploaded normal_face.png for PID {}", pid);
-        } else {
-            println!("Failed to upload normal_face.png for PID {}", pid);
+        ).send().await {
+            Ok(_) => println!("Uploaded normal_face.png for PID {}", pid),
+            Err(e) => println!("Failed to upload normal_face.png for PID {}: {:?}", pid, e),
         }
     } else {
         println!("Failed to fetch PNG for PID {}", pid);
@@ -448,20 +447,18 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
     if let Some(tga_data) = get_image_tga(mii_data).await {
         println!("Fetched TGA for PID {}, uploading...", pid);
         let object_content = ObjectContent::from(tga_data.clone());
-        if client.put_object_content(
+        match client.put_object_content(
             bucket,
             &format!("{}/standard.tga", user_mii_key),
             object_content
-        ).send().await.is_ok() {
-            println!("Uploaded standard.tga for PID {}", pid);
-        } else {
-            println!("Failed to upload standard.tga for PID {}", pid);
+        ).send().await {
+            Ok(_) => println!("Uploaded standard.tga for PID {}", pid),
+            Err(e) => println!("Failed to upload standard.tga for PID {}: {:?}", pid, e),
         }
     } else {
         println!("Failed to fetch TGA for PID {}", pid);
     }
 
-    // Upload expressions
     let expressions = [
         "frustrated",
         "smile_open_mouth",
@@ -478,14 +475,13 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
             if let Ok(bytes) = resp.bytes().await {
                 println!("Fetched expression '{}', uploading...", expression);
                 let object_content = ObjectContent::from(bytes.to_vec());
-                if client.put_object_content(
+                match client.put_object_content(
                     bucket,
                     &format!("{}/{}.png", user_mii_key, expression),
                     object_content
-                ).send().await.is_ok() {
-                    println!("Uploaded {}.png for PID {}", expression, pid);
-                } else {
-                    println!("Failed to upload {}.png for PID {}", expression, pid);
+                ).send().await {
+                    Ok(_) => println!("Uploaded {}.png for PID {}", expression, pid),
+                    Err(e) => println!("Failed to upload {}.png for PID {}: {:?}", expression, pid, e),
                 }
             } else {
                 println!("Failed to read bytes for expression '{}' for PID {}", expression, pid);
@@ -495,7 +491,6 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         }
     }
 
-    // Upload body
     let body_url = format!("https://mii-unsecure.ariankordi.net/miis/image.png?data={}&type=all_body&width=270&instance_count=1", mii_data);
     println!("Fetching body image for PID {}", pid);
 
@@ -503,14 +498,13 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         if let Ok(bytes) = resp.bytes().await {
             println!("Fetched body image, uploading...");
             let object_content = ObjectContent::from(bytes.to_vec());
-            if client.put_object_content(
+            match client.put_object_content(
                 bucket,
                 &format!("{}/body.png", user_mii_key),
                 object_content
-            ).send().await.is_ok() {
-                println!("Uploaded body.png for PID {}", pid);
-            } else {
-                println!("Failed to upload body.png for PID {}", pid);
+            ).send().await {
+                Ok(_) => println!("Uploaded body.png for PID {}", pid),
+                Err(e) => println!("Failed to upload body.png for PID {}: {:?}", pid, e),
             }
         } else {
             println!("Failed to read body image bytes for PID {}", pid);
@@ -521,4 +515,5 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
 
     println!("Finished Mii image generation for PID {}", pid);
 }
+
 
