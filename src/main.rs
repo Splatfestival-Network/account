@@ -102,19 +102,19 @@ async fn launch() -> _ {
         .connect(&act_database_url).await
         .expect("unable to create pool");
 
-    static S3_URL_STRING: Lazy<Box<str>> = Lazy::new(||
+    pub static S3_URL_STRING: Lazy<Box<str>> = Lazy::new(||
         env::var("S3_URL").expect("S3_URL not specified").into_boxed_str()
     );
 
-    static S3_URL: Lazy<BaseUrl> = Lazy::new(||
+    pub static S3_URL: Lazy<BaseUrl> = Lazy::new(||
         S3_URL_STRING.parse().unwrap()
     );
 
-    static S3_USER: Lazy<Box<str>> = Lazy::new(||
+    pub static S3_USER: Lazy<Box<str>> = Lazy::new(||
         env::var("S3_USER").expect("S3_USER not specified").into_boxed_str()
     );
 
-    static S3_PASSWD: Lazy<Box<str>> = Lazy::new(||
+    pub static S3_PASSWD: Lazy<Box<str>> = Lazy::new(||
         env::var("S3_PASSWD").expect("S3_PASSWD not specified").into_boxed_str()
     );
 
