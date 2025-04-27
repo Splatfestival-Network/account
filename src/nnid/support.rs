@@ -20,9 +20,7 @@ pub struct ValidateEmailInput{
 }
 #[post("/v1/api/support/validate/email", data="<data>")]
 pub async fn validate(data: Form<ValidateEmailInput>){
-    if let Err(e) = send_verification_email(&data.email, 123456, "Andrea Test Username").await {
-        println!("Failed to send verification email: {e}");
-    }
+
 }
 
 #[put("/v1/api/support/email_confirmation/<pid>/<code>")]

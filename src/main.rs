@@ -1,8 +1,13 @@
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use dotenvy::dotenv;
 use juniper::{EmptyMutation, EmptySubscription};
+use minio::s3::ClientBuilder;
+use minio::s3::creds::StaticProvider;
+use minio::s3::http::BaseUrl;
+use once_cell::sync::Lazy;
 use rocket::fairing::AdHoc;
 use rocket::http::{ContentType, Header, Status};
 use rocket::{catch, catchers, routes, Request};
@@ -11,6 +16,7 @@ use sqlx::Postgres;
 use sqlx::postgres::PgPoolOptions;
 use tonic::transport::Server;
 use crate::graphql::{Query, Schema};
+use crate::nnid::people::S3ClientState;
 
 mod xml;
 mod conntest;
@@ -96,8 +102,32 @@ async fn launch() -> _ {
         .connect(&act_database_url).await
         .expect("unable to create pool");
 
+    pub static S3_URL_STRING: Lazy<Box<str>> = Lazy::new(||
+        env::var("S3_URL").expect("S3_URL not specified").into_boxed_str()
+    );
+
+    pub static S3_URL: Lazy<BaseUrl> = Lazy::new(||
+        S3_URL_STRING.parse().unwrap()
+    );
+
+    pub static S3_USER: Lazy<Box<str>> = Lazy::new(||
+        env::var("S3_USER").expect("S3_USER not specified").into_boxed_str()
+    );
+
+    pub static S3_PASSWD: Lazy<Box<str>> = Lazy::new(||
+        env::var("S3_PASSWD").expect("S3_PASSWD not specified").into_boxed_str()
+    );
+
+    let s3_client = ClientBuilder::new(S3_URL.clone())
+        .provider(Some(Box::new(StaticProvider::new(&S3_USER, &S3_PASSWD, None))))
+        .build()
+        .expect("failed to create s3 client");
+
     rocket::build()
         .manage(pool)
+        .manage(S3ClientState {
+            client: Arc::new(s3_client),
+        })
         .manage(graphql::Context(graph_pool))
         .manage(Schema::new(
             Query,

@@ -29,6 +29,7 @@ dependencies = [
  "prost",
  "quick-xml",
  "rand",
+ "reqwest",
  "rocket",
  "serde",
  "serde_json",
