@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use chrono::{NaiveDate, NaiveDateTime};
@@ -396,7 +397,6 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
     ))
 }
 
-
 #[put("/v1/api/people/@me/miis/@primary", data = "<data>")]
 pub async fn change_mii(
     database: &State<Pool>,
@@ -406,8 +406,9 @@ pub async fn change_mii(
 ) -> Result<(), Option<Errors<'static>>> {
     let db = database.inner();
     let pid = auth.pid;
-
     let mii_data = data.data.as_ref();
+
+    println!("Received new Mii data update for PID {}", pid);
 
     let result = sqlx::query!(
         "UPDATE users SET mii_data = $1 WHERE pid = $2",
@@ -417,9 +418,12 @@ pub async fn change_mii(
         .execute(db)
         .await;
 
-    if result.is_err() {
+    if let Err(e) = result {
+        println!("Failed to update Mii data for PID {}: {:?}", pid, e);
         return Err(Some(DATABASE_ERROR));
     }
+
+    println!("Successfully updated Mii data for PID {}", pid);
 
     generate_mii_images(s3.client.clone(), "pn-cdn", pid, mii_data).await;
 
@@ -430,36 +434,39 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
     let user_mii_key = format!("mii/{}", pid);
     println!("Starting Mii image generation for PID {}", pid);
 
-    async fn save_upload_delete(
+    async fn save_and_upload(
         client: &Client,
         bucket: &str,
         key: &str,
         data: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let temp_path = format!("/tmp/{}", key.replace("/", "_"));
+        println!("Saving temporary file at {}", temp_path);
 
         {
-            use std::fs::File;
             let mut file = File::create(&temp_path)?;
             file.write_all(data)?;
-            file.flush()?;
+            file.flush()?; // Make sure file is actually written
         }
+
+        println!("File saved, starting upload to S3...");
 
         let content = ObjectContent::from(Path::new(&temp_path));
         client.put_object_content(bucket, key, content).send().await?;
 
-        fs::remove_file(&temp_path)?;
+        println!("Uploaded {} to bucket {}", key, bucket);
+
+        // NOTE: DO NOT delete temp file for now
+        println!("(Skipping delete for {})", temp_path);
 
         Ok(())
     }
 
     // Upload normal face image
     if let Some(png_data) = get_image_png(mii_data).await {
-        println!("Fetched PNG for PID {}, uploading...", pid);
-        if let Err(e) = save_upload_delete(&client, bucket, &format!("{}/normal_face.png", user_mii_key), &png_data).await {
+        println!("Fetched PNG for PID {}, preparing upload...", pid);
+        if let Err(e) = save_and_upload(&client, bucket, &format!("{}/normal_face.png", user_mii_key), &png_data).await {
             println!("Failed to upload normal_face.png for PID {}: {:?}", pid, e);
-        } else {
-            println!("Uploaded normal_face.png for PID {}", pid);
         }
     } else {
         println!("Failed to fetch PNG for PID {}", pid);
@@ -467,11 +474,9 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
 
     // Upload standard TGA
     if let Some(tga_data) = get_image_tga(mii_data).await {
-        println!("Fetched TGA for PID {}, uploading...", pid);
-        if let Err(e) = save_upload_delete(&client, bucket, &format!("{}/standard.tga", user_mii_key), &tga_data).await {
+        println!("Fetched TGA for PID {}, preparing upload...", pid);
+        if let Err(e) = save_and_upload(&client, bucket, &format!("{}/standard.tga", user_mii_key), &tga_data).await {
             println!("Failed to upload standard.tga for PID {}: {:?}", pid, e);
-        } else {
-            println!("Uploaded standard.tga for PID {}", pid);
         }
     } else {
         println!("Failed to fetch TGA for PID {}", pid);
@@ -495,11 +500,9 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
 
         if let Ok(resp) = reqwest::get(&url).await {
             if let Ok(bytes) = resp.bytes().await {
-                println!("Fetched expression '{}', uploading...", expression);
-                if let Err(e) = save_upload_delete(&client, bucket, &format!("{}/{}.png", user_mii_key, expression), &bytes).await {
+                println!("Fetched expression '{}', preparing upload...", expression);
+                if let Err(e) = save_and_upload(&client, bucket, &format!("{}/{}.png", user_mii_key, expression), &bytes).await {
                     println!("Failed to upload {}.png for PID {}: {:?}", expression, pid, e);
-                } else {
-                    println!("Uploaded {}.png for PID {}", expression, pid);
                 }
             } else {
                 println!("Failed to read bytes for expression '{}' for PID {}", expression, pid);
@@ -518,11 +521,9 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
 
     if let Ok(resp) = reqwest::get(&body_url).await {
         if let Ok(bytes) = resp.bytes().await {
-            println!("Fetched body image, uploading...");
-            if let Err(e) = save_upload_delete(&client, bucket, &format!("{}/body.png", user_mii_key), &bytes).await {
+            println!("Fetched body image, preparing upload...");
+            if let Err(e) = save_and_upload(&client, bucket, &format!("{}/body.png", user_mii_key), &bytes).await {
                 println!("Failed to upload body.png for PID {}: {:?}", pid, e);
-            } else {
-                println!("Uploaded body.png for PID {}", pid);
             }
         } else {
             println!("Failed to read body image bytes for PID {}", pid);
@@ -533,6 +534,7 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
 
     println!("Finished Mii image generation for PID {}", pid);
 }
+
 
 
 
