@@ -444,20 +444,22 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         println!("Saving temporary file at {}", temp_path);
 
         {
-            let mut file = File::create(&temp_path)?;
+            let mut file = std::fs::File::create(&temp_path)?;
             file.write_all(data)?;
             file.flush()?; // Make sure file is actually written
         }
 
         println!("File saved, starting upload to S3...");
-
-        let content = ObjectContent::from(Path::new(&temp_path));
+        let content = ObjectContent::from(std::path::Path::new(&temp_path));
         client.put_object_content(bucket, key, content).send().await?;
 
         println!("Uploaded {} to bucket {}", key, bucket);
 
-        // NOTE: DO NOT delete temp file for now
-        println!("(Skipping delete for {})", temp_path);
+        // ✅ Now delete the temp file
+        match std::fs::remove_file(&temp_path) {
+            Ok(_) => println!("Deleted temporary file {}", temp_path),
+            Err(e) => println!("Failed to delete temporary file {}: {:?}", temp_path, e),
+        }
 
         Ok(())
     }
@@ -534,9 +536,3 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
 
     println!("Finished Mii image generation for PID {}", pid);
 }
-
-
-
-
-
-
