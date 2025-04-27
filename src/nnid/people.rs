@@ -1,4 +1,5 @@
 use std::env;
+use std::io::Cursor;
 use chrono::{NaiveDate, NaiveDateTime};
 use gxhash::{gxhash32, gxhash64};
 use minio::s3::builders::{ObjectContent};
@@ -423,30 +424,32 @@ pub async fn change_mii(
     Ok(())
 }
 
+fn build_object_content(data: Vec<u8>) -> ObjectContent {
+    ObjectContent::SegmentedBytes(SegmentedBytes::new_from_bytes(data))
+}
+
 pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mii_data: &str) {
     let user_mii_key = format!("mii/{}", pid);
 
     println!("Starting Mii image generation for PID {}", pid);
 
-    // Upload normal face images
     if let Some(png_data) = get_image_png(mii_data).await {
         println!("Fetched PNG for PID {}, uploading...", pid);
-        let object_content = ObjectContent::from(png_data.clone());
+        let content = ObjectContent::from(Cursor::new(png_data.clone()));
         match client.put_object_content(
             bucket,
             &format!("{}/normal_face.png", user_mii_key),
-            object_content
+            content
         ).send().await {
             Ok(_) => println!("Uploaded normal_face.png for PID {}", pid),
             Err(e) => println!("Failed to upload normal_face.png for PID {}: {:?}", pid, e),
         }
-    } else {
-        println!("Failed to fetch PNG for PID {}", pid);
     }
+
 
     if let Some(tga_data) = get_image_tga(mii_data).await {
         println!("Fetched TGA for PID {}, uploading...", pid);
-        let object_content = ObjectContent::from(tga_data.clone());
+        let object_content = ObjectContent::from(Cursor::new(tga_data.clone()));
         match client.put_object_content(
             bucket,
             &format!("{}/standard.tga", user_mii_key),
@@ -468,13 +471,16 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
     ];
 
     for expression in expressions.iter() {
-        let url = format!("https://mii-unsecure.ariankordi.net/miis/image.png?data={}&expression={}&type=face&width=128&instance_count=1", mii_data, expression);
+        let url = format!(
+            "https://mii-unsecure.ariankordi.net/miis/image.png?data={}&expression={}&type=face&width=128&instance_count=1",
+            mii_data, expression
+        );
         println!("Fetching expression '{}' for PID {}", expression, pid);
 
         if let Ok(resp) = reqwest::get(&url).await {
             if let Ok(bytes) = resp.bytes().await {
                 println!("Fetched expression '{}', uploading...", expression);
-                let object_content = ObjectContent::from(bytes.to_vec());
+                let object_content = ObjectContent::Bytes(bytes.to_vec());
                 match client.put_object_content(
                     bucket,
                     &format!("{}/{}.png", user_mii_key, expression),
@@ -491,13 +497,16 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
         }
     }
 
-    let body_url = format!("https://mii-unsecure.ariankordi.net/miis/image.png?data={}&type=all_body&width=270&instance_count=1", mii_data);
+    let body_url = format!(
+        "https://mii-unsecure.ariankordi.net/miis/image.png?data={}&type=all_body&width=270&instance_count=1",
+        mii_data
+    );
     println!("Fetching body image for PID {}", pid);
 
     if let Ok(resp) = reqwest::get(&body_url).await {
         if let Ok(bytes) = resp.bytes().await {
             println!("Fetched body image, uploading...");
-            let object_content = ObjectContent::from(bytes.to_vec());
+            let object_content = ObjectContent::Bytes(bytes.to_vec());
             match client.put_object_content(
                 bucket,
                 &format!("{}/body.png", user_mii_key),
@@ -515,5 +524,6 @@ pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mi
 
     println!("Finished Mii image generation for PID {}", pid);
 }
+
 
 
