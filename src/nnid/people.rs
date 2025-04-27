@@ -51,6 +51,10 @@ pub static S3_PASSWD: Lazy<Box<str>> = Lazy::new(||
     env::var("S3_PASSWD").expect("S3_PASSWD not specified").into_boxed_str()
 );
 
+pub static S3_BUCKET: Lazy<Box<str>> = Lazy::new(||
+    env::var("S3_BUCKET").expect("S3_BUCKET not specified").into_boxed_str()
+);
+
 fn get_mii_img_url_path(pid: i32, format: &str) -> String{
     format!("mii/{}/main.{}", pid, format)
 }
@@ -78,7 +82,7 @@ pub async fn generate_s3_images(pid: i32, mii_data: &str) {
     let object_name = get_mii_img_url_path(pid, "png");
     let object_content = ObjectContent::from(image);
 
-    if let Err(e) = client.put_object_content("pn-cdn", &object_name, object_content).send().await {
+    if let Err(e) = client.put_object_content(&**S3_BUCKET, &object_name, object_content).send().await {
         println!("Failed to upload PNG for PID {}: {:?}", pid, e);
     } else {
         println!("Successfully uploaded PNG for PID {}", pid);
@@ -92,7 +96,7 @@ pub async fn generate_s3_images(pid: i32, mii_data: &str) {
     let object_name = get_mii_img_url_path(pid, "tga");
     let object_content = ObjectContent::from(image);
 
-    if let Err(e) = client.put_object_content("pn-cdn", &object_name, object_content).send().await {
+    if let Err(e) = client.put_object_content(&**S3_BUCKET, &object_name, object_content).send().await {
         println!("Failed to upload TGA for PID {}: {:?}", pid, e);
     } else {
         println!("Successfully uploaded TGA for PID {}", pid);
@@ -425,7 +429,7 @@ pub async fn change_mii(
 
     println!("Successfully updated Mii data for PID {}", pid);
 
-    generate_mii_images(s3.client.clone(), "pn-cdn", pid, mii_data).await;
+    generate_mii_images(s3.client.clone(), &**S3_BUCKET, pid, mii_data).await;
 
     Ok(())
 }
