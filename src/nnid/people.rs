@@ -381,7 +381,7 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
 
 
 #[put("/v1/api/people/@me/miis/@primary", data = "<data>")]
-pub async fn refresh_mii_images(
+pub async fn change_mii(
     database: &State<Pool>,
     s3: &State<S3ClientState>,
     auth: Auth<false>,
