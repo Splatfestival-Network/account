@@ -219,7 +219,6 @@ pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationDat
         gender.as_ref(),
         data.as_ref(),
         verification_code,
-        name.as_ref(),
     ).execute(database).await.unwrap();
 
     generate_s3_images(pid, &data).await;
