@@ -12,7 +12,7 @@ stages:
   - initialize-submodules
   - build
   - push
-
+  - test  # for SAST + Dependency Scanning
 
 build:
   stage: build
@@ -31,3 +31,20 @@ push:
   only:
     - main
 
+sast:
+  stage: test
+  allow_failure: true
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+dependency_scanning:
+  stage: test
+  allow_failure: true
+  artifacts:
+    reports:
+      dependency_scanning: gl-dependency-scanning-report.json
+  rules:
+    - if: $CI_COMMIT_BRANCH
