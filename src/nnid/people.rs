@@ -170,6 +170,7 @@ pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationDat
             address
         },
         mii: Mii{
+            name,
             data,
             ..
         },
@@ -218,6 +219,7 @@ pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationDat
         gender.as_ref(),
         data.as_ref(),
         verification_code,
+        name.as_ref(),
     ).execute(database).await.unwrap();
 
     generate_s3_images(pid, &data).await;
@@ -376,8 +378,8 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
                     &(gxhash64(mii_data.as_bytes(), 1) & !(0x1000000000000000))
                 )),
                 name: mii::MiiData::read(&mii_data)
-                    .map(|v| v.name)
-                    .unwrap_or_else(|| "INVALID".to_string()),
+                .map(|v| v.name)
+                .unwrap_or_else(|| "INVALID".to_string()),
                 primary: YesNoVal(true),
                 data: mii_data,
                 status: "COMPLETED".to_string(),

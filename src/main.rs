@@ -29,6 +29,7 @@ mod data_wrapper;
 mod grpc;
 mod graphql;
 mod email;
+mod papi;
 
 type Pool = sqlx::Pool<Postgres>;
 
@@ -167,6 +168,8 @@ async fn launch() -> _ {
             nnid::provider::get_nex_token,
             nnid::provider::get_service_token,
             nnid::mapped_ids::mapped_ids,
+            papi::login::login,
+            papi::user::get_user,
             //graphql
             graphql::graphiql,
             graphql::playground,
