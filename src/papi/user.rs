@@ -89,7 +89,7 @@ pub async fn get_user(auth: Auth<false>) -> Json<UserInfoResponse> {
                     .map(|v| v.name)
                     .unwrap_or_else(|| "INVALID".to_string())
             },
-            image_url: format!("https://minio.spfn.cc:9000/act-rs/mii/{}/normal_face.png", user.pid),
+            image_url: format!("https://cdn.spfn.cc/mii/{}/normal_face.png", user.pid),
         },
         flags: FlagsInfo {
             marketing: user.marketing_allowed,
