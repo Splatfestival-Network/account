@@ -40,7 +40,7 @@ impl MiiData{
         let data: &FFLStoreData = try_from_bytes(data.get(0..size_of::<FFLStoreData>())?).ok()?;
 
         let name = data.mii_data.core_data.name;
-        let idx = name.iter().position(|v| *v == 0x0).unwrap_or(11);
+        let idx = name.iter().position(|v| *v == 0x0).unwrap_or(10);
 
         let name = &name[0..idx];
 
