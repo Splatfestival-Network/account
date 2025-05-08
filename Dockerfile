@@ -6,6 +6,10 @@ RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static protobuf-dev lld
 
 WORKDIR /app
 
+# this optimizes build time by putting the dependencies in a seperate docker layer, speeding up future builds
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo fetch
+
 COPY . .
 
 RUN OPENSSL_LIB_DIR=/usr/lib OPENSSL_INCLUDE_DIR=/usr/include/openssl OPENSSL_STATIC=1 RUSTFLAGS="-C target-feature=+aes,+sse -C relocation-model=static -C linker=ld.lld" cargo build --profile prod --target x86_64-unknown-linux-musl
