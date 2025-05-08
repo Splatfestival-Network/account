@@ -9,7 +9,6 @@ before_script:
   - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" ci.perditum.com
 
 stages:
-  - initialize-submodules
   - build
   - push
 
@@ -25,7 +24,6 @@ push:
     - build
   script:
     - docker tag "$IMAGE_NAME:$IMAGE_TAG" "$IMAGE_NAME:latest"
-    - docker push "$IMAGE_NAME:$IMAGE_TAG"
     - docker push "$IMAGE_NAME:latest"
   only:
     - main
