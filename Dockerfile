@@ -7,7 +7,7 @@ RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static protobuf-dev lld
 WORKDIR /app
 
 # this optimizes build time by putting the dependencies in a seperate docker layer, speeding up future builds
-COPY mii ./
+COPY mii ./mii
 RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo fetch
 
 COPY . .
