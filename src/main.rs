@@ -124,6 +124,14 @@ async fn launch() -> _ {
         .build()
         .expect("failed to create s3 client");
 
+    let _guard = sentry::init(("https://03b49d3cc0012089b6f2608c265a721b@o4508799920635904.ingest.de.sentry.io/4509298106826832", sentry::ClientOptions {
+        release: sentry::release_name!(),
+        // Capture user IPs and potentially sensitive headers when using HTTP server integrations
+        // see https://docs.sentry.io/platforms/rust/data-management/data-collected for more info
+        send_default_pii: true,
+        ..Default::default()
+        }));
+
     rocket::build()
         .manage(pool)
         .manage(S3ClientState {
