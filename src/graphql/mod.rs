@@ -198,16 +198,16 @@ impl Mutation {
 }
 */
 
-#[rocket::get("/graphiql")]
-pub fn graphiql() -> RawHtml<String> {
-    juniper_rocket::graphiql_source("/graphql", None)
-}
-
-
-#[rocket::get("/playground")]
-pub fn playground() -> RawHtml<String> {
-    juniper_rocket::playground_source("/graphql", None)
-}
+// #[rocket::get("/graphiql")]
+// pub fn graphiql() -> RawHtml<String> {
+//     juniper_rocket::graphiql_source("/graphql", None)
+// }
+//
+//
+// #[rocket::get("/playground")]
+// pub fn playground() -> RawHtml<String> {
+//     juniper_rocket::playground_source("/graphql", None)
+// }
 
 #[rocket::get("/graphql?<request..>")]
 pub async fn get_graphql(

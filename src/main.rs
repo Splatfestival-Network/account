@@ -119,6 +119,10 @@ async fn launch() -> _ {
         env::var("S3_PASSWD").expect("S3_PASSWD not specified").into_boxed_str()
     );
 
+    pub static CDN_URL: Lazy<Box<str>> = Lazy::new(||
+        env::var("CDN_URL").expect("CDN_URL not specified").into_boxed_str()
+    );
+
     let s3_client = ClientBuilder::new(S3_URL.clone())
         .provider(Some(Box::new(StaticProvider::new(&S3_USER, &S3_PASSWD, None))))
         .build()
