@@ -81,3 +81,8 @@ pub async fn mapped_ids(pool: &State<Pool>, input_type: String, output_type: Str
         }
     ))
 }
+
+#[get("/v1/api/admin/time")]
+pub fn get_time() {
+    // stubbed, it only needs the header.
+}
