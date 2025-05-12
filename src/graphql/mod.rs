@@ -2,11 +2,28 @@ use chrono::NaiveDateTime;
 use juniper::{graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
 use rocket::response::content::RawHtml;
 use rocket::State;
+use rocket::request::{FromRequest, Outcome, Request};
+use rocket::http::Status;
 // use crate::account::account::{read_basic_auth_token, read_bearer_auth_token};
 use crate::nnid::oauth::TokenData;
 use crate::Pool;
 
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Context {
+    type Error = ();
 
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let pool = req.rocket().state::<Pool>().cloned().unwrap(); // assume Pool is managed as state
+
+        // Grab API key from header
+        let api_key = req.headers().get_one("X-API-Key").map(|s| s.to_string());
+
+        Outcome::Success(Context {
+            pool,
+            api_key,
+        })
+    }
+}
 
 pub type Schema = RootNode<
     'static,
@@ -16,8 +33,12 @@ pub type Schema = RootNode<
 >;
 
 
-pub struct Context(pub Pool);
-impl juniper::Context for Context{}
+pub struct Context {
+    pub pool: Pool,
+    pub api_key: Option<String>,
+}
+impl juniper::Context for Context {}
+
 
 #[derive(GraphQLObject)]
 #[graphql(description = "Data inside of a token")]
@@ -26,6 +47,16 @@ struct TokenInfo {
     expire_date: NaiveDateTime,
     title_id: Option<String>
 }
+
+#[derive(GraphQLObject)]
+#[graphql(description = "User information from a token")]
+struct UserInfo {
+    username: String,
+    account_level: i32,
+    nex_password: String,
+    mii_data: String,
+}
+
 
 pub struct Query;
 
@@ -53,6 +84,65 @@ impl Query {
             pid: data.pid,
             expire_date: token_info.expires,
             title_id: token_info.title_id,
+        })
+    }
+
+    async fn user_from_token(
+        token_data: String,
+        context: &Context,
+    ) -> Option<UserInfo> {
+        let data = match TokenData::decode(&token_data) {
+            Some(data) => data,
+            None => {
+                eprintln!("Failed to decode token");
+                return None;
+            }
+        };
+
+        let user = match sqlx::query!(
+        "SELECT username, account_level, nex_password, mii_data FROM users WHERE pid = $1",
+        data.pid
+    )
+            .fetch_one(&context.0)
+            .await
+            .ok() {
+            Some(user) => user,
+            None => {
+                eprintln!("No user found for PID {}", data.pid);
+                return None;
+            }
+        };
+
+        Some(UserInfo {
+            username: user.username,
+            account_level: user.account_level,
+            nex_password: user.nex_password,
+            mii_data: user.mii_data.replace('\n', "").replace('\r', ""),
+        })
+    }
+
+    async fn user_by_pid(pid: i32, context: &Context) -> Option<UserInfo> {
+        // Expected API key (could also be in an env var)
+        const EXPECTED_KEY: &str = "your-secret-api-key";
+
+        if context.api_key.as_deref() != Some(EXPECTED_KEY) {
+            eprintln!("Rejected request due to missing or invalid API key");
+            return None;
+        }
+
+        let user = sqlx::query!(
+            "SELECT username, account_level, nex_password, mii_data FROM users WHERE pid = $1",
+            pid
+        )
+        .fetch_one(&context.pool)
+        .await
+        .ok()?;
+
+        Some(UserInfo {
+            username: user.username,
+            account_level: user.account_level,
+            nex_password: user.nex_password,
+            mii_data: user.mii_data,
         })
     }
 
