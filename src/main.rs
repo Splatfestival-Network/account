@@ -185,9 +185,8 @@ async fn launch() -> _ {
             nnid::mapped_ids::mapped_ids,
             papi::login::login,
             papi::user::get_user,
-            //graphql
-            graphql::graphiql,
-            graphql::playground,
+            // graphql::graphiql,
+            // graphql::playground,
             graphql::get_graphql,
             graphql::post_graphql,
         ])
