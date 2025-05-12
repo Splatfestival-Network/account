@@ -3,7 +3,6 @@ use juniper::{graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, R
 use rocket::response::content::RawHtml;
 use rocket::State;
 use rocket::request::{FromRequest, Outcome, Request};
-use rocket::http::Status;
 use std::env;
 use once_cell::sync::Lazy;
 // use crate::account::account::{read_basic_auth_token, read_bearer_auth_token};
