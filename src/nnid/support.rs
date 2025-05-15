@@ -1,7 +1,6 @@
 use rocket::{State, post, FromForm, put};
 use crate::Pool;
 use rocket::form::Form;
-use crate::email::send_verification_email;
 use crate::error::{Error, Errors};
 use chrono::Utc;
 

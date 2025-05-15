@@ -1,6 +1,12 @@
+use std::env;
+use once_cell::sync::Lazy;
 use rocket::{get};
 use crate::account::account::{Auth};
 use rocket::serde::json::Json;
+
+pub static CDN_URL: Lazy<Box<str>> = Lazy::new(||
+    env::var("CDN_URL").expect("CDN_URL not specified").into_boxed_str()
+);
 
 #[derive(serde::Serialize)]
 struct EmailInfo {
@@ -89,7 +95,7 @@ pub async fn get_user(auth: Auth<false>) -> Json<UserInfoResponse> {
                     .map(|v| v.name)
                     .unwrap_or_else(|| "INVALID".to_string())
             },
-            image_url: format!("https://cdn.spfn.cc/mii/{}/normal_face.png", user.pid),
+            image_url: format!("https://{}/mii/{}/normal_face.png", &CDN_URL.to_string(), user.pid),
         },
         flags: FlagsInfo {
             marketing: user.marketing_allowed,

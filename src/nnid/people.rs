@@ -1,8 +1,5 @@
 use std::env;
-use std::fs;
-use std::fs::File;
 use std::io::Write;
-use std::path::Path;
 use chrono::{NaiveDate, NaiveDateTime};
 use gxhash::{gxhash32, gxhash64};
 use minio::s3::builders::{ObjectContent};
@@ -23,7 +20,6 @@ use crate::email::send_verification_email;
 use rand::Rng;
 use mii::{get_image_png, get_image_tga};
 use minio::s3::client::Client;
-use minio::s3::args::PutObjectArgs;
 use std::sync::Arc;
 
 const DATABASE_ERROR: Errors = Errors{
@@ -60,7 +56,7 @@ fn get_mii_img_url_path(pid: i32, format: &str) -> String{
 }
 
 fn get_mii_img_url(pid: i32, format: &str) -> String{
-    format!("{}/pn-boss/{}", &*S3_URL_STRING, get_mii_img_url_path(pid, format))
+    format!("{}/{}/{}", &*S3_URL_STRING, &*S3_BUCKET, get_mii_img_url_path(pid, format))
 }
 
 pub async fn generate_s3_images(pid: i32, mii_data: &str) {
