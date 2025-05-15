@@ -56,7 +56,7 @@ fn get_mii_img_url_path(pid: i32, format: &str) -> String{
 }
 
 fn get_mii_img_url(pid: i32, format: &str) -> String{
-    format!("{}/pn-boss/{}", &*S3_URL_STRING, get_mii_img_url_path(pid, format))
+    format!("{}/{}/{}", &*S3_URL_STRING, &*S3_BUCKET, get_mii_img_url_path(pid, format))
 }
 
 pub async fn generate_s3_images(pid: i32, mii_data: &str) {
