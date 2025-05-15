@@ -64,12 +64,12 @@ struct UserInfo {
 
 #[derive(GraphQLObject)]
 #[graphql(description = "User information from a username")]
-struct UserInfoWithPId {
-    username: String,
-    account_level: i32,
-    nex_password: String,
-    mii_data: String,
-    pid: i32,
+pub struct UserInfoWithPId {
+    pub username: String,
+    pub account_level: i32,
+    pub nex_password: String,
+    pub mii_data: String,
+    pub pid: i32,
 }
 
 pub struct Query;

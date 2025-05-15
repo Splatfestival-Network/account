@@ -141,10 +141,6 @@ async fn launch() -> _ {
         .manage(S3ClientState {
             client: Arc::new(s3_client),
         })
-        .manage(graphql::Context {
-            pool: graph_pool,
-            api_key: None, // or Some(...) if you’re preloading a static API key
-        })
         .manage(Schema::new(
             Query,
             EmptyMutation::new(),
