@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, username, account_level, nex_password, mii_data FROM users WHERE username = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "account_level",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "nex_password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "mii_data",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6de07eba2f12b15f541d129b83664a272a0d3ac9e929e70b399582fa3f14166d"
+}

@@ -42,6 +42,11 @@
         "ordinal": 7,
         "name": "title_id",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "account_level",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -59,6 +64,7 @@
       false,
       false,
       false,
+      true,
       true
     ]
   },
