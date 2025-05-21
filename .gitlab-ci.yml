@@ -10,21 +10,16 @@ before_script:
 
 stages:
   - build
-  - push
 
-build:
+build_and_push:
   stage: build
   script:
     - echo "DATABASE_URL=$DATABASE_URL" > .env
     - docker build -t "$IMAGE_NAME:$IMAGE_TAG" .
-
-push:
-  stage: push
-  needs:
-    - build
-  script:
-    - docker tag "$IMAGE_NAME:$IMAGE_TAG" "$IMAGE_NAME:latest"
-    - docker push "$IMAGE_NAME:latest"
-  only:
-    - main
-
+    - |
+      if [ "$CI_COMMIT_REF_NAME" = "main" ]; then
+        docker tag "$IMAGE_NAME:$IMAGE_TAG" "$IMAGE_NAME:latest"
+        docker push "$IMAGE_NAME:latest"
+      else
+        echo "skipping push"
+      fi
