@@ -101,6 +101,8 @@ pub async fn get_nex_token(pool: &State<Pool>, auth: Auth<true>, game_server_id:
 
     let host = host.ip();
 
+
+
     Ok(
         Xml(
             NexToken{

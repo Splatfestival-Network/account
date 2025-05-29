@@ -230,6 +230,11 @@ impl<'r, const FORCE_BEARER_AUTH: bool> FromRequest<'r> for Auth<FORCE_BEARER_AU
         let Some(user) = user else {
             return Outcome::Error((Status::BadRequest, INVALID_TOKEN_ERRORS));
         };
+        
+        let user = User{
+            nex_password: format!("{:a>16}", user.nex_password),
+            ..user
+        };
 
         Outcome::Success(Self(user))
     }

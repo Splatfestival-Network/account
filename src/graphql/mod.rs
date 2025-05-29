@@ -126,6 +126,8 @@ impl Query {
                 return None;
             }
         };
+        
+        let nex_password = format!("{:a>16}",user.nex_password);
 
         Some(UserInfo {
             username: user.username,
@@ -148,6 +150,8 @@ impl Query {
         .fetch_one(&context.pool)
         .await
         .ok()?;
+
+        let nex_password = format!("{:a>16}",user.nex_password);
 
         Some(UserInfo {
             username: user.username,
