@@ -132,7 +132,7 @@ impl Query {
         Some(UserInfo {
             username: user.username,
             account_level: user.account_level,
-            nex_password: user.nex_password,
+            nex_password,
             mii_data: user.mii_data.replace('\n', "").replace('\r', ""),
         })
     }
@@ -156,7 +156,7 @@ impl Query {
         Some(UserInfo {
             username: user.username,
             account_level: user.account_level,
-            nex_password: user.nex_password,
+            nex_password,
             mii_data: user.mii_data,
         })
     }
@@ -175,10 +175,12 @@ impl Query {
         .await
         .ok()?;
 
+        let nex_password = format!("{:a>16}",user.nex_password);
+
         Some(UserInfoWithPId {
             username: user.username,
             account_level: user.account_level,
-            nex_password: user.nex_password,
+            nex_password,
             mii_data: user.mii_data,
             pid: user.pid,
         })
