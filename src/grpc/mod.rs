@@ -77,7 +77,9 @@ impl grpc::account_server::Account for AccountService {
         .map_err(|_| Status::invalid_argument("No NEX account found"))?
         .nex_password;
 
-        Ok(Response::new(GetNexPasswordResponse { password }))
+        let password_padded = format!("{:a>16}", password);
+
+        Ok(Response::new(GetNexPasswordResponse { password: password_padded }))
     }
     async fn update_pnid_permissions(
         &self,
