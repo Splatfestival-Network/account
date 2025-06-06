@@ -27,6 +27,7 @@ mod graphql;
 mod email;
 mod papi;
 mod mii_util;
+mod json_api;
 
 type Pool = sqlx::Pool<Postgres>;
 
@@ -140,6 +141,7 @@ async fn launch() -> _ {
             nnid::provider::get_nex_token,
             nnid::provider::get_service_token,
             nnid::mapped_ids::mapped_ids,
+            json_api::oauth::generate_token::generate_token,
             papi::login::login,
             papi::user::get_user,
             // graphql::graphiql,
