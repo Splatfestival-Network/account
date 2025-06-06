@@ -149,6 +149,7 @@ async fn launch() -> _ {
             nnid::provider::get_service_token,
             nnid::mapped_ids::mapped_ids,
             json_api::oauth::generate_token::generate_token,
+            json_api::users::profile::get_own_profile,
             papi::login::login,
             papi::user::get_user,
             // graphql::graphiql,

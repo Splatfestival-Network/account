@@ -266,20 +266,20 @@ pub struct GetOwnProfileData{
 
 #[get("/v1/api/people/@me/profile")]
 pub fn get_own_profile(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
-    build_own_profile(user.into())
+    Ds(Xml(build_profile(user.into())))
 }
 
 #[get("/v1/api/people/@me/devices/owner")]
 pub fn get_device_owner(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
-    build_own_profile(user.into())
+    Ds(Xml(build_profile(user.into())))
 }
 
 #[post("/v1/api/people/@me/devices")]
 pub fn get_own_device(user: Auth<false>) -> Ds<Xml<GetOwnProfileData>>{
-    build_own_profile(user.into())
+    Ds(Xml(build_profile(user.into())))
 }
 
-fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
+pub fn build_profile(user: User) -> GetOwnProfileData {
     let User {
         username,
         pid,
@@ -309,7 +309,7 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
         .replace("\r", "")
         .replace(" ", "");
 
-    Ds(Xml(
+
         GetOwnProfileData {
             active_flag: YesNoVal(true),
             pid,
@@ -361,7 +361,6 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
             region,
             utc_offset: timezone_offset,
         }
-    ))
 }
 
 #[put("/v1/api/people/@me/miis/@primary", data = "<data>")]
