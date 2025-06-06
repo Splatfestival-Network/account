@@ -6,9 +6,10 @@ use dotenvy::dotenv;
 use juniper::{EmptyMutation, EmptySubscription};
 use once_cell::sync::Lazy;
 use rocket::fairing::AdHoc;
-use rocket::http::{ContentType, Header, Status};
+use rocket::http::{ContentType, Header, Method, Status};
 use rocket::{catch, catchers, routes, Request};
 use rocket::response::content::RawXml;
+use rocket_cors::{AllowedOrigins, CorsOptions};
 use sqlx::Postgres;
 use sqlx::postgres::PgPoolOptions;
 use tonic::transport::Server;
@@ -96,12 +97,18 @@ async fn launch() -> _ {
         .connect(&act_database_url).await
         .expect("unable to create pool");
 
-    let graph_pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&act_database_url).await
-        .expect("unable to create pool");
+    let cors = CorsOptions::default()
+        .allowed_origins(AllowedOrigins::All)
+        .allowed_methods(
+            vec![Method::Get, Method::Post, Method::Patch]
+                .into_iter()
+                .map(From::from)
+                .collect(),
+        )
+        .allow_credentials(true);
 
     rocket::build()
+        .attach(cors.to_cors().unwrap())
         .manage(pool)
         .manage(Schema::new(
             Query,
