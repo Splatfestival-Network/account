@@ -2,10 +2,6 @@ use std::env;
 use std::io::Write;
 use chrono::{NaiveDate, NaiveDateTime};
 use gxhash::{gxhash32, gxhash64};
-use minio::s3::builders::{ObjectContent};
-use minio::s3::client::ClientBuilder;
-use minio::s3::creds::StaticProvider;
-use minio::s3::http::BaseUrl;
 use once_cell::sync::Lazy;
 use rocket::{get, post, put, State};
 use rocket::serde::{Deserialize, Serialize};
@@ -19,8 +15,8 @@ use crate::xml::{Xml, YesNoVal};
 use crate::email::send_verification_email;
 use rand::Rng;
 use mii::{get_image_png, get_image_tga};
-use minio::s3::client::Client;
 use std::sync::Arc;
+use crate::mii_util::get_mii_img_url;
 
 const DATABASE_ERROR: Errors = Errors{
     error: &[
@@ -31,34 +27,8 @@ const DATABASE_ERROR: Errors = Errors{
     ]
 };
 
-pub static S3_URL_STRING: Lazy<Box<str>> = Lazy::new(||
-    env::var("S3_URL").expect("S3_URL not specified").into_boxed_str()
-);
 
-pub static S3_URL: Lazy<BaseUrl> = Lazy::new(||
-    S3_URL_STRING.parse().unwrap()
-);
-
-pub static S3_USER: Lazy<Box<str>> = Lazy::new(||
-    env::var("S3_USER").expect("S3_USER not specified").into_boxed_str()
-);
-
-pub static S3_PASSWD: Lazy<Box<str>> = Lazy::new(||
-    env::var("S3_PASSWD").expect("S3_PASSWD not specified").into_boxed_str()
-);
-
-pub static S3_BUCKET: Lazy<Box<str>> = Lazy::new(||
-    env::var("S3_BUCKET").expect("S3_BUCKET not specified").into_boxed_str()
-);
-
-fn get_mii_img_url_path(pid: i32, format: &str) -> String{
-    format!("mii/{}/main.{}", pid, format)
-}
-
-fn get_mii_img_url(pid: i32, format: &str) -> String{
-    format!("{}/{}/{}", &*S3_URL_STRING, &*S3_BUCKET, get_mii_img_url_path(pid, format))
-}
-
+/*
 pub async fn generate_s3_images(pid: i32, mii_data: &str) {
     let auth = StaticProvider::new(&S3_USER, &S3_PASSWD, None);
 
@@ -97,15 +67,11 @@ pub async fn generate_s3_images(pid: i32, mii_data: &str) {
     } else {
         println!("Successfully uploaded TGA for PID {}", pid);
     }
-}
+}*/
 
 #[derive(Deserialize)]
 pub struct Email{
     address: Box<str>
-}
-
-pub struct S3ClientState {
-    pub client: Arc<Client>,
 }
 
 #[derive(Deserialize)]
@@ -217,7 +183,7 @@ pub async fn create_account(database: &State<Pool>, data: Xml<AccountCreationDat
         verification_code,
     ).execute(database).await.unwrap();
 
-    generate_s3_images(pid, &data).await;
+    //generate_s3_images(pid, &data).await;
 
     if let Err(e) = send_verification_email(address.as_ref(), verification_code, user_id.as_ref()).await {
         println!("Failed to send verification email: {e}");
@@ -401,7 +367,6 @@ fn build_own_profile(user: User) -> Ds<Xml<GetOwnProfileData>> {
 #[put("/v1/api/people/@me/miis/@primary", data = "<data>")]
 pub async fn change_mii(
     database: &State<Pool>,
-    s3: &State<S3ClientState>,
     auth: Auth<false>,
     data: Xml<UpdateMiiData>,
 ) -> Result<(), Option<Errors<'static>>> {
@@ -426,83 +391,5 @@ pub async fn change_mii(
 
     println!("Successfully updated Mii data for PID {}", pid);
 
-    generate_mii_images(s3.client.clone(), &**S3_BUCKET, pid, mii_data).await;
-
     Ok(())
-}
-
-pub async fn generate_mii_images(client: Arc<Client>, bucket: &str, pid: i32, mii_data: &str) {
-    let user_mii_key = format!("mii/{}", pid);
-
-    async fn save_and_upload(
-        client: &Client,
-        bucket: &str,
-        key: &str,
-        data: &[u8],
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let temp_path = format!("/tmp/{}", key.replace("/", "_"));
-
-        {
-            let mut file = std::fs::File::create(&temp_path)?;
-            file.write_all(data)?;
-            file.flush()?;
-        }
-
-        let content = ObjectContent::from(std::path::Path::new(&temp_path));
-        client.put_object_content(bucket, key, content).send().await?;
-
-        std::fs::remove_file(&temp_path)?;
-
-        Ok(())
-    }
-
-    if let Some(png_data) = get_image_png(mii_data).await {
-        if let Err(e) = save_and_upload(&client, bucket, &format!("{}/normal_face.png", user_mii_key), &png_data).await {
-            println!("Failed to upload normal_face.png for PID {}: {:?}", pid, e);
-        }
-    }
-
-    if let Some(tga_data) = get_image_tga(mii_data).await {
-        if let Err(e) = save_and_upload(&client, bucket, &format!("{}/standard.tga", user_mii_key), &tga_data).await {
-            println!("Failed to upload standard.tga for PID {}: {:?}", pid, e);
-        }
-    }
-
-    let expressions = [
-        "frustrated",
-        "smile_open_mouth",
-        "wink_left",
-        "sorrow",
-        "surprise_open_mouth",
-    ];
-
-    for expression in expressions.iter() {
-        let url = format!(
-            "https://mii-unsecure.ariankordi.net/miis/image.png?data={}&expression={}&type=face&width=128&instance_count=1",
-            mii_data, expression
-        );
-
-        if let Ok(resp) = reqwest::get(&url).await {
-            if let Ok(bytes) = resp.bytes().await {
-                if let Err(e) = save_and_upload(&client, bucket, &format!("{}/{}.png", user_mii_key, expression), &bytes).await {
-                    println!("Failed to upload {}.png for PID {}: {:?}", expression, pid, e);
-                }
-            }
-        }
-    }
-
-    let body_url = format!(
-        "https://mii-unsecure.ariankordi.net/miis/image.png?data={}&type=all_body&width=270&instance_count=1",
-        mii_data
-    );
-
-    if let Ok(resp) = reqwest::get(&body_url).await {
-        if let Ok(bytes) = resp.bytes().await {
-            if let Err(e) = save_and_upload(&client, bucket, &format!("{}/body.png", user_mii_key), &bytes).await {
-                println!("Failed to upload body.png for PID {}: {:?}", pid, e);
-            }
-        }
-    }
-
-    println!("Finished Mii image generation for PID {}", pid);
 }

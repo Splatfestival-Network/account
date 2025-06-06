@@ -4,9 +4,6 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use dotenvy::dotenv;
 use juniper::{EmptyMutation, EmptySubscription};
-use minio::s3::ClientBuilder;
-use minio::s3::creds::StaticProvider;
-use minio::s3::http::BaseUrl;
 use once_cell::sync::Lazy;
 use rocket::fairing::AdHoc;
 use rocket::http::{ContentType, Header, Status};
@@ -16,7 +13,6 @@ use sqlx::Postgres;
 use sqlx::postgres::PgPoolOptions;
 use tonic::transport::Server;
 use crate::graphql::{Query, Schema};
-use crate::nnid::people::S3ClientState;
 
 mod xml;
 mod conntest;
@@ -30,6 +26,7 @@ mod grpc;
 mod graphql;
 mod email;
 mod papi;
+mod mii_util;
 
 type Pool = sqlx::Pool<Postgres>;
 
@@ -103,44 +100,8 @@ async fn launch() -> _ {
         .connect(&act_database_url).await
         .expect("unable to create pool");
 
-    pub static S3_URL_STRING: Lazy<Box<str>> = Lazy::new(||
-        env::var("S3_URL").expect("S3_URL not specified").into_boxed_str()
-    );
-
-    pub static S3_URL: Lazy<BaseUrl> = Lazy::new(||
-        S3_URL_STRING.parse().unwrap()
-    );
-
-    pub static S3_USER: Lazy<Box<str>> = Lazy::new(||
-        env::var("S3_USER").expect("S3_USER not specified").into_boxed_str()
-    );
-
-    pub static S3_PASSWD: Lazy<Box<str>> = Lazy::new(||
-        env::var("S3_PASSWD").expect("S3_PASSWD not specified").into_boxed_str()
-    );
-
-    pub static CDN_URL: Lazy<Box<str>> = Lazy::new(||
-        env::var("CDN_URL").expect("CDN_URL not specified").into_boxed_str()
-    );
-
-    let s3_client = ClientBuilder::new(S3_URL.clone())
-        .provider(Some(Box::new(StaticProvider::new(&S3_USER, &S3_PASSWD, None))))
-        .build()
-        .expect("failed to create s3 client");
-
-    let _guard = sentry::init(("https://03b49d3cc0012089b6f2608c265a721b@o4508799920635904.ingest.de.sentry.io/4509298106826832", sentry::ClientOptions {
-        release: sentry::release_name!(),
-        // Capture user IPs and potentially sensitive headers when using HTTP server integrations
-        // see https://docs.sentry.io/platforms/rust/data-management/data-collected for more info
-        send_default_pii: true,
-        ..Default::default()
-        }));
-
     rocket::build()
         .manage(pool)
-        .manage(S3ClientState {
-            client: Arc::new(s3_client),
-        })
         .manage(Schema::new(
             Query,
             EmptyMutation::new(),
