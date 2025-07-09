@@ -150,8 +150,10 @@ async fn launch() -> _ {
             nnid::mapped_ids::mapped_ids,
             json_api::oauth::generate_token::generate_token,
             json_api::users::profile::get_own_profile,
+            json_api::users::mii::get_mii_data_by_pid,
             papi::login::login,
             papi::user::get_user,
+
             // graphql::graphiql,
             // graphql::playground,
             graphql::get_graphql,
